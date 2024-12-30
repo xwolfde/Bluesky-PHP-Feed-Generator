@@ -1,0 +1,5 @@
+{
+    "bluesky_username" : "",
+    "bluesky_password": "",
+    "xrpc-endpoint": "/xrpc/app.bsky.feed.getFeedSkeleton"
+}
