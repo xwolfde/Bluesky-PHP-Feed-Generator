@@ -68,10 +68,10 @@ class API {
     }
 
      /**
-     * Ruft die Beiträge eines bestimmten Benutzers ab.
+     * Ruft einen bestimmten Post auf.
      *
-     * @param string $did Die DID des Benutzers (z. B. "did:plc:12345").
-     * @return array|null Die Beiträge des Benutzers oder null bei Fehlern.
+     * @param string $uri . Bspw: at://did:plc:wyxbu4v7nqt6up3l3camwtnu/app.bsky.feed.post/3lemy4yerrk27
+     * @return array|null . Die Daten des Posts, wenn gefunden
      */
     public function getPosts(string $uri): ?array {
         if (!$this->token) {
@@ -93,6 +93,8 @@ class API {
         // Gib den ersten Post zurück (da wir nur einen URI übergeben)
         return $response['posts'][0];
     }
+    
+    
     /**
      * Ruft die öffentliche Timeline ab.
      *
@@ -107,6 +109,31 @@ class API {
 
         return $this->makeRequest($url, "GET");
     }
+    
+    
+    /*
+     * Suchanfrage
+     */
+    public function searchPosts(array $search): ?array {
+        // Basis-URL des Endpoints
+        $endpoint = "{$this->baseUrl}/app.bsky.feed.searchPosts";
+
+          // Sicherstellen, dass das Feld 'q' vorhanden ist
+        if (empty($search['q'])) {
+            throw new \InvalidArgumentException('Das Feld "q" ist erforderlich.');
+        }
+
+        // GET-Anfrage mit den Suchparametern
+        $response = $this->makeRequest($endpoint, 'GET', $search);
+
+        if (!$response) {
+            error_log('Keine Ergebnisse für die Suchanfrage gefunden.');
+            return null;
+        }
+
+        return $response;
+    }
+
 
     /**
      * Führt eine HTTP-Anfrage aus.

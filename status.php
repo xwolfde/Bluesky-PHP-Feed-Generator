@@ -35,7 +35,7 @@ $config = new Config();
 
 
 // Konfiguration der Kurz- und Langoptionen
-$shortopts = "hvcu:"; // -h, -v, -c <file>
+$shortopts = "hvcu:q:"; // -h, -v, -c <file>
 $longopts = ["help", "version", "config", "uri:"]; 
 
 // Optionen parsen
@@ -67,6 +67,8 @@ match ($action) {
     'autorfeed' => get_authorfeed($config),
     'createFeed'    => createFeed($config),
     'getPost'   => get_post($config, $options),
+    'searchPosts'    => get_searchPosts($config, $options),
+    'search'    => get_searchPosts($config, $options),
     default => show_help()
 };
 
@@ -88,6 +90,9 @@ function show_help() {
     echo "\tcreatefeed: Erstelle XRPC feed\n";
     echo "\tgetPost: Rufe einen einzelnen Post ab und zeigt alle zugehörigen Daten an.\n";
     echo "\t         Benötigt die Angabe der URI mit --uri=AT-URI\n";
+    echo "\tsearchPosts: Suche nach Posts\n";
+    echo "\t         Benötigt die Angabe eines Suchstrings mit --q=Suchstring\n";
+    
     
     echo "\nParameter:\n";
     echo "\t--config: Zeige Config\n";
@@ -133,6 +138,39 @@ function get_post(Config $config, array $options) {
     
 }
 
+/*
+ * Suche Posts
+ */
+function get_searchPosts(Config $config, array $options) {
+    if (!isset($options['q'])) {
+        echo "Please enter a URI for a post to look at with --uri=URI\n";
+        exit;
+    } 
+    $search = [
+        'q' => $options['q'], // Erforderlich
+        'sort' => 'newest',       // Optional
+        'lang' => 'de',           // Optional
+        'tag' => ''               // Leerer Wert wird ignoriert
+    ];
+    if ((!empty($config->get('bluesky_username'))) && (!empty($config->get('bluesky_password')))) {
+        $blueskyAPI = new API($config);
+        $token = $blueskyAPI->getAccessToken($config->get('bluesky_username'), $config->get('bluesky_password'));
+        if (!$token) {
+            throw new Exception("Login fehlgeschlagen. Überprüfe deinen Benutzernamen und dein Passwort.");
+        }
+
+
+        $postdata = $blueskyAPI->searchPosts($search);
+        echo get_timeline_output($postdata, $config);
+        echo Debugging::get_dump_debug($postdata, false, true);
+        
+        
+
+    } else {
+        echo "No bluesky account in config.json, therfor stopping\n";
+    }
+
+}
 /*
  * Erstelle Feed und gib diesen zurück
  */
