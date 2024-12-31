@@ -5,7 +5,14 @@ namespace Bluesky;
 class API {
     private string $baseUrl = "https://bsky.social/xrpc";
     private ?string $token = null;
+    private Config $config;
 
+    public function __construct(Config $config) {
+        $this->config = $config;
+        if (!empty($this->config->get('service_baseurl'))) {
+            $this->baseUrl = $this->config->get('service_baseurl');
+        }
+    }
     /**
      * Loggt sich ein und speichert das Access-Token.
      *
@@ -76,7 +83,9 @@ class API {
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
         
         // TODO: Change this for productive use:
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        if (($this->config->get('SSL_VERIFYPEER') !== null) && ($this->config->get('SSL_VERIFYPEER') == 'false')) {
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        }
 
         $headers = ["Content-Type: application/json"];
         if ($this->token) {

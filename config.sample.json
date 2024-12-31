@@ -1,5 +1,7 @@
 {
     "bluesky_username" : "",
     "bluesky_password": "",
-    "xrpc-endpoint": "/xrpc/app.bsky.feed.getFeedSkeleton"
+    "service_baseurl": "https://bsky.social/xrpc",
+    "xrpc-endpoint": "/xrpc/app.bsky.feed.getFeedSkeleton",
+    "SSL_VERIFYPEER": "false"
 }
