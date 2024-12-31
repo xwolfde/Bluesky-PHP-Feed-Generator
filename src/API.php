@@ -48,8 +48,21 @@ class API {
         if (!$this->token) {
             throw new \Exception("Access token is required. Call getAccessToken() first.");
         }
-
+        $params = '';
+        if (!empty($this->config->get('query_getAuthorFeed'))) {
+            if (isset($this->config->get('query_getAuthorFeed')['filter'])) {
+                $params .= '&filter='.$this->config->get('query_getAuthorFeed')['filter'];
+            }
+            if (isset($this->config->get('query_getAuthorFeed')['limit'])) {
+                $params .= '&limit='.$this->config->get('query_getAuthorFeed')['limit'];
+            }
+        }
+        
+       
         $url = "{$this->baseUrl}/app.bsky.feed.getAuthorFeed?actor={$did}";
+        if (!empty($params)) {
+            $url .= $params;
+        }
 
         return $this->makeRequest($url, "GET");
     }
@@ -107,6 +120,12 @@ class API {
 
         curl_close($ch);
 
-        return json_decode($response, true);
+        $decoded = json_decode($response, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \RuntimeException('JSON decode error: ' . json_last_error_msg());
+        }
+
+        return $decoded;
     }
 }

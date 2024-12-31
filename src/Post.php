@@ -21,9 +21,10 @@
 namespace Bluesky;
 
 class Post {
-    
-    public function __construct(private array $post) {
-        
+    private Config $config;
+
+    public function __construct(private array $post, Config $config) {
+        $this->config = $config;
     }
 
     public function getAuthor(): ?string {
@@ -56,5 +57,30 @@ class Post {
 
     public function getRawData(): array {
         return $this->post;
+    }
+    
+    public function getListView(?string $template = null): string {
+        $template ??= '#author#  "#textexcerpt#..."  #created# (#likes# Likes #reposts# Reposts, Links: #links#)';
+        
+        $limit = $this->config->get('exerpt-length') ?? 80;
+                
+        $textExcerpt = $this->getText() ? substr(str_replace(["\r", "\n"], ' ', $this->getText()), 0, $limit)
+        : 'N/A';
+         
+         
+        // Platzhalter mit den entsprechenden Werten ersetzen
+        $replacements = [
+            '#author#' => $this->getAuthor() ?? 'N/A',
+            '#text#' => $this->getText() ?? 'N/A',
+            '#textexcerpt#' => $textExcerpt,
+            '#created#' => $this->getCreatedAt() ?? 'N/A',
+            '#id#' => $this->getId() ?? 'N/A',
+            '#links#' => implode(', ', $this->getLinks() ?? []),
+            '#likes#' => $this->getLikes() !== null ? (string)$this->getLikes() : '0',
+            '#reposts#' => $this->getReposts() !== null ? (string)$this->getReposts() : '0',
+        ];
+
+        return str_replace(array_keys($replacements), array_values($replacements), $template);
+
     }
 }

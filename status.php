@@ -27,6 +27,7 @@ require __DIR__ . '/vendor/autoload.php';
 use Bluesky\FeedGenerator;
 use Bluesky\Config;
 use Bluesky\API;
+use Bluesky\Post;
 
 // Loading config
 $config = new Config();
@@ -54,7 +55,7 @@ foreach ($options as $option) {
             'v' => print("Version: 1.0.0\n"),
             'config' => show_config($config),
             'timeline' => get_timeline($config),
-            'autorfeed' => get_authorfeed($confg),
+            'autorfeed' => get_authorfeed($config),
             default => show_help()
         };
     }
@@ -119,7 +120,7 @@ function get_timeline(Config $config) {
         echo "Access Token erfolgreich abgerufen: {$token}\n";
         $timeline = $blueskyAPI->getPublicTimeline();
         echo "Öffentliche Timeline:\n";
-        print_r($timeline);
+        echo get_timeline_output($timeline, $config);
 
     } else {
         echo "No bluesky account in config.json, therfor stopping\n";
@@ -141,11 +142,44 @@ function get_authorfeed(Config $config) {
         if (!empty($config->get("timeline-did"))) {
             echo "Timeline of did ".$config->get("timeline-did").":\n";
             $didtimeline = $blueskyAPI->getAuthorFeed($config->get("timeline-did"));
-            print_r($didtimeline);
+            echo get_timeline_output($didtimeline, $config);
         }
     } else {
         echo "No bluesky account in config.json, therfor stopping\n";
     }
 }
 
+
+function get_timeline_output(array $timeline, Config $config): string {
+    $output = "";
+    $nr = 0;
+    foreach ($timeline as $entry => $feedobject) {    
+        if ($entry == 'feed') {
+            foreach ($feedobject as $content) {
+            
+                foreach ($content as $feedtype => $feeddata) {
+                    if ($feedtype == 'post') {
+                         $post = new Post($feeddata, $config);
+                        // Füge die Ausgabe des Posts mit getListView() zum Gesamtausgabe-String hinzu
+                        $output .= $post->getListView() . PHP_EOL;
+                        $nr += 1;
+                    } else {
+             //           echo "feed type $feedtype:\n";
+             //           var_dump($feeddata);
+                    }
+                }
+            
+            }
+        } elseif ($entry == 'cursor') {
+            error_log("Cursor for feed: $feedobject " . date('Y-m-d H:i:s'));
+        } else {
+            error_log("Unknown schema object $entry in response timeline " . date('Y-m-d H:i:s'));
+        }
+
+
+    }
+
+    return $output;
+    
+}
 
