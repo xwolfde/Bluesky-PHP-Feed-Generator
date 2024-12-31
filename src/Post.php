@@ -44,13 +44,37 @@ class Post {
     }
 
     public function getLikes(): ?int {
-        return $this->post['stats']['likes'] ?? null;
+        return $this->post['likeCount'] ?? null;
     }
 
     public function getReposts(): ?int {
-        return $this->post['stats']['reposts'] ?? null;
+        return $this->post['repostCount'] ?? null;
     }
 
+    public function getReplys(): ?int {
+        return $this->post['replyCount'] ?? null;
+    }
+    public function getQuotes(): ?int {
+        return $this->post['quoteCount'] ?? null;
+    }
+    public function getLang(): ?string {
+        return $this->post['record']['langs'][0] ?? null;
+    }
+    public function getTags(): ?array {
+        $taglist = [];
+        if (isset($this->post['record']['facets'])) {
+            foreach ($this->post['record']['facets'] as $num) {
+                if (isset($num['features'][0]['tag'])) {
+                    $taglist[] = '#'.$num['features'][0]['tag'];
+                }
+            }
+        }
+        
+        return $taglist;
+    }
+    
+    
+    
     public function getId(): ?string {
         return $this->post['uri'] ?? null;
     }
@@ -60,7 +84,8 @@ class Post {
     }
     
     public function getListView(?string $template = null): string {
-        $template ??= '#author#  "#textexcerpt#..."  #created# (#likes# Likes #reposts# Reposts, Links: #links#)';
+        $template ??= '#author#: "#textexcerpt#..."  #tags#  (#likes# Likes #reposts# Reposts, #replys# Replys) '
+                . PHP_EOL.'             #created# URI: #id#';
         
         $limit = $this->config->get('exerpt-length') ?? 80;
                 
@@ -76,6 +101,10 @@ class Post {
             '#created#' => $this->getCreatedAt() ?? 'N/A',
             '#id#' => $this->getId() ?? 'N/A',
             '#links#' => implode(', ', $this->getLinks() ?? []),
+            '#tags#' => implode(', ', $this->getTags() ?? []),
+            '#reposts#' => $this->getReposts() !== null ? (string)$this->getReposts() : '0',
+            '#replys#' => $this->getReplys() !== null ? (string)$this->getReplys() : '0',
+            '#quotes#' => $this->getQuotes() !== null ? (string)$this->getQuotes() : '0',
             '#likes#' => $this->getLikes() !== null ? (string)$this->getLikes() : '0',
             '#reposts#' => $this->getReposts() !== null ? (string)$this->getReposts() : '0',
         ];

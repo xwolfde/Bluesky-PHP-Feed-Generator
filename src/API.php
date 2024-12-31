@@ -67,6 +67,32 @@ class API {
         return $this->makeRequest($url, "GET");
     }
 
+     /**
+     * Ruft die Beiträge eines bestimmten Benutzers ab.
+     *
+     * @param string $did Die DID des Benutzers (z. B. "did:plc:12345").
+     * @return array|null Die Beiträge des Benutzers oder null bei Fehlern.
+     */
+    public function getPosts(string $uri): ?array {
+        if (!$this->token) {
+            throw new \Exception("Access token is required. Call getAccessToken() first.");
+        }
+        $data = [
+            'uris' => [$uri], // AT URI(s) as input
+        ];
+        $url = "{$this->baseUrl}/app.bsky.feed.getPosts";
+        
+        // API-Aufruf über die makeRequest-Methode
+         $response = $this->makeRequest($url, "GET", $data);
+         
+        if (!$response || empty($response['posts'])) {
+              error_log("Keine Posts für URI gefunden: $uri");
+              return null;
+        }
+
+        // Gib den ersten Post zurück (da wir nur einen URI übergeben)
+        return $response['posts'][0];
+    }
     /**
      * Ruft die öffentliche Timeline ab.
      *
@@ -91,6 +117,14 @@ class API {
      * @return array|null Die JSON-Antwort als Array oder null bei Fehlern.
      */
     private function makeRequest(string $url, string $method, ?array $data = null): ?array {
+        
+        if ($method === "GET" && $data) {
+            // Daten als URL-Parameter kodieren und an die URL anhängen
+            $queryString = http_build_query($data);
+            $url .= '?' . $queryString;
+        }
+
+        
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);

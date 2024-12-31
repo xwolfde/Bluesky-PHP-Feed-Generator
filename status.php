@@ -28,61 +28,110 @@ use Bluesky\FeedGenerator;
 use Bluesky\Config;
 use Bluesky\API;
 use Bluesky\Post;
+use Bluesky\Debugging;
 
 // Loading config
 $config = new Config();
 
 
-$arguments = $_SERVER['argv'] ?? [];
-array_shift($arguments); // Erster Eintrag ist der Skriptname, entfernen
-$options = [];
+// Konfiguration der Kurz- und Langoptionen
+$shortopts = "hvcu:"; // -h, -v, -c <file>
+$longopts = ["help", "version", "config", "uri:"]; 
 
-// Optionen analysieren (z.B. --help oder --v)
-foreach ($arguments as $arg) {
-    if (str_starts_with($arg, '--')) {
-        $options[] = ltrim($arg, '-');
-    } else {
-        $options[] = $arg;
-    }
+// Optionen parsen
+$options = getopt($shortopts, $longopts);
+$arguments = array_slice($_SERVER['argv'], count($options) + 1); // Zusätzliche Argumente nach Optionen
+
+// Primäre Aktion als erstes Argument erwarten
+$action = $arguments[0] ?? null;
+
+// Verarbeitungslogik
+if (isset($options['h']) || isset($options['help'])) {
+    show_help();
+    exit(0);
+}
+
+if (isset($options['v']) || isset($options['version'])) {
+    echo "Version: 1.0.0\n";
+    exit(0);
+}
+if (isset($options['c']) || isset($options['config'])) {
+    show_config($config);
+    exit(0);
 }
 
 
 
+match ($action) {
+    'timeline' => get_timeline($config),
+    'autorfeed' => get_authorfeed($config),
+    'createFeed'    => createFeed($config),
+    'getPost'   => get_post($config, $options),
+    default => show_help()
+};
 
-foreach ($options as $option) {
-        match ($option) {
-            'help' => print("Hilfe: Verfügbare Optionen sind:\n--help\n--v\n--config\n\n"),
-            'v' => print("Version: 1.0.0\n"),
-            'config' => show_config($config),
-            'timeline' => get_timeline($config),
-            'autorfeed' => get_authorfeed($config),
-            default => show_help()
-        };
-    }
-if (empty($options)) {
-      show_help();
-}
+
 exit;
 
 
 function show_config(Config $config) {
     echo "Config:\n";
-    var_dump($config->getAll());
+    echo Debugging::get_dump_debug($config->getAll(), false, true);
 }
 /*
  * Ausgabe der Hilfetexte
  */
 function show_help() {
-    echo "Hilfe: Verfügbare Optionen sind:\n";
-    echo "timeline: Zeige Public Timeline\n";
-    echo "autorfeed Zeige Feed eines über die Config gegebenen Autors\n";
-    echo "createfeed: Erstelle XRPC feed\n";
+    echo "Hilfe: Verfügbare Kommandos sind:\n";
+    echo "\ttimeline: Zeige Public Timeline\n";
+    echo "\tautorfeed: Zeige Feed eines über die Config gegebenen Autors\n";
+    echo "\tcreatefeed: Erstelle XRPC feed\n";
+    echo "\tgetPost: Rufe einen einzelnen Post ab und zeigt alle zugehörigen Daten an.\n";
+    echo "\t         Benötigt die Angabe der URI mit --uri=AT-URI\n";
+    
+    echo "\nParameter:\n";
     echo "\t--config: Zeige Config\n";
     echo "\t--help: Diese Hilfe\n";
+    echo "\t--uri: AT-URI\n";
     echo "\t--v: Version\n";
+    
 }
 
+/*
+ * Sucht einen einzelnenm Post anhand einer URI und gibt dessen Rohdaten zurück
+ */
+function get_post(Config $config, array $options) {
+    if ((!isset($options['u'])) && (!isset($options['uri']))) {
+        echo "Please enter a URI for a post to look at with --uri=URI\n";
+        exit;
+    } 
+    
+    if (isset($options['u'])) {
+        $uri = $options['u'];
+    } else {
+        $uri = $options['uri'];
+    }
 
+     if ((!empty($config->get('bluesky_username'))) && (!empty($config->get('bluesky_password')))) {
+        $blueskyAPI = new API($config);
+        $token = $blueskyAPI->getAccessToken($config->get('bluesky_username'), $config->get('bluesky_password'));
+        if (!$token) {
+            throw new Exception("Login fehlgeschlagen. Überprüfe deinen Benutzernamen und dein Passwort.");
+        }
+
+
+        $postdata = $blueskyAPI->getPosts($uri);
+       
+        echo Debugging::get_dump_debug($postdata, false, true);
+        
+        
+
+    } else {
+        echo "No bluesky account in config.json, therfor stopping\n";
+    }
+    
+    
+}
 
 /*
  * Erstelle Feed und gib diesen zurück
@@ -117,7 +166,6 @@ function get_timeline(Config $config) {
         if (!$token) {
             throw new Exception("Login fehlgeschlagen. Überprüfe deinen Benutzernamen und dein Passwort.");
         }
-        echo "Access Token erfolgreich abgerufen: {$token}\n";
         $timeline = $blueskyAPI->getPublicTimeline();
         echo "Öffentliche Timeline:\n";
         echo get_timeline_output($timeline, $config);
@@ -137,7 +185,6 @@ function get_authorfeed(Config $config) {
         if (!$token) {
             throw new Exception("Login fehlgeschlagen. Überprüfe deinen Benutzernamen und dein Passwort.");
         }
-        echo "Access Token erfolgreich abgerufen: {$token}\n";
 
         if (!empty($config->get("timeline-did"))) {
             echo "Timeline of did ".$config->get("timeline-did").":\n";
