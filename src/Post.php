@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright (C) 2024 Anwender
+ * Copyright (C) 2024 xwolf
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,12 +21,27 @@
 namespace Bluesky;
 
 class Post {
-    private Config $config;
-
-    public function __construct(private array $post, Config $config) {
-        $this->config = $config;
+    public string $text;
+    public string $createdAt;
+    public ?array $facets;
+    public ?array $langs;
+    public ?array $tags;
+    public array $raw;
+    public ?array $config;
+    
+    public function __construct(array $data, ?Config $config = null) {
+        $this->text = $data['text'] ?? '';
+        $this->createdAt = $data['createdAt'] ?? '';
+        $this->facets = $data['facets'] ?? null;
+        $this->langs = $data['langs'] ?? null;
+        $this->tags = $data['tags'] ?? null;
+        $this->raw = $data;
+        $this->config = $config ?? null;
     }
-
+    
+    public function setConfig(Config $config) {
+        return $this->config = $config;
+    }
     public function getAuthor(): ?string {
         return $this->post['author']['handle'] ?? null;
     }
@@ -87,7 +102,8 @@ class Post {
         $template ??= '#author#: "#textexcerpt#..."  #tags#  (#likes# Likes #reposts# Reposts, #replys# Replys) '
                 . PHP_EOL.'             #created# URI: #id#';
         
-        $limit = $this->config->get('exerpt-length') ?? 80;
+        
+        $limit = $post->config->get('exerpt-length') ?? 80;
                 
         $textExcerpt = $this->getText() ? substr(str_replace(["\r", "\n"], ' ', $this->getText()), 0, $limit)
         : 'N/A';

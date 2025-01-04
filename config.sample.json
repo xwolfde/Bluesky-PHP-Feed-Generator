@@ -8,5 +8,11 @@
      "query_getAuthorFeed": {
         "filter": "posts_no_replies",
         "limit": 20
+    },
+    "query_searchPosts": {
+        "lang": "de",
+        "limit": 20,
+        "sort": "latest",
+        "tag": ""
     }
 }

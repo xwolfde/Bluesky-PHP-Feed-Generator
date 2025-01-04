@@ -90,8 +90,11 @@ class API {
               return null;
         }
 
-        // Gib den ersten Post zurück (da wir nur einen URI übergeben)
-        return $response['posts'][0];
+        // Den ersten Post im Array nehmen (da wir nur einen URI übergeben haben)
+        $postData = $response['posts'][0];
+
+        // Rückgabe des Posts als Post-Objekt
+        return new Post($postData);
     }
     
     
@@ -123,6 +126,16 @@ class API {
             throw new \InvalidArgumentException('Das Feld "q" ist erforderlich.');
         }
 
+        // Werte aus der Config laden
+        $configParams = $this->config->get('query_searchPosts') ?? [];
+
+        // Fehlende Werte aus der Config ergänzen
+        foreach ($configParams as $key => $value) {
+            if (!array_key_exists($key, $search) || $search[$key] === null || $search[$key] === '') {
+                $search[$key] = $value;
+            }
+        }
+    
         // GET-Anfrage mit den Suchparametern
         $response = $this->makeRequest($endpoint, 'GET', $search);
 
@@ -130,7 +143,22 @@ class API {
             error_log('Keine Ergebnisse für die Suchanfrage gefunden.');
             return null;
         }
+        // Validieren der API-Antwort
+        if (!isset($response['posts'])) {
+            throw new \RuntimeException('Ungültige API-Antwort.');
+        }
 
+        // Umwandeln der Post-Daten in Post-Objekte
+        $posts = [];
+        foreach ($response['posts'] as $postData) {
+            $posts[] = new Post($postData);
+        }
+
+        return [
+            'cursor' => $response['cursor'] ?? '',
+            'hitsTotal' => (int) ($response['hitsTotal'] ?? 0),
+            'posts' => $posts
+        ];
         return $response;
     }
 

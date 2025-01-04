@@ -36,13 +36,13 @@ $config = new Config();
 
 // Konfiguration der Kurz- und Langoptionen
 $shortopts = "hvcu:q:"; // -h, -v, -c <file>
-$longopts = ["help", "version", "config", "uri:"]; 
+$longopts = ["help", "version", "config", "uri:", "limit:", "tag:", "lang:", "q:"]; 
 
 // Optionen parsen
 $options = getopt($shortopts, $longopts);
-$arguments = array_slice($_SERVER['argv'], count($options) + 1); // Zusätzliche Argumente nach Optionen
+$arguments = array_slice($_SERVER['argv'], count($options) + 1); // ZusÃ¤tzliche Argumente nach Optionen
 
-// Primäre Aktion als erstes Argument erwarten
+// PrimÃ¤re Aktion als erstes Argument erwarten
 $action = $arguments[0] ?? null;
 
 // Verarbeitungslogik
@@ -84,14 +84,14 @@ function show_config(Config $config) {
  * Ausgabe der Hilfetexte
  */
 function show_help() {
-    echo "Hilfe: Verfügbare Kommandos sind:\n";
+    echo "Hilfe: VerfÃ¼gbare Kommandos sind:\n";
     echo "\ttimeline: Zeige Public Timeline\n";
-    echo "\tautorfeed: Zeige Feed eines über die Config gegebenen Autors\n";
+    echo "\tautorfeed: Zeige Feed eines Ã¼ber die Config gegebenen Autors\n";
     echo "\tcreatefeed: Erstelle XRPC feed\n";
-    echo "\tgetPost: Rufe einen einzelnen Post ab und zeigt alle zugehörigen Daten an.\n";
-    echo "\t         Benötigt die Angabe der URI mit --uri=AT-URI\n";
+    echo "\tgetPost: Rufe einen einzelnen Post ab und zeigt alle zugehÃ¶rigen Daten an.\n";
+    echo "\t         BenÃ¶tigt die Angabe der URI mit --uri=AT-URI\n";
     echo "\tsearchPosts: Suche nach Posts\n";
-    echo "\t         Benötigt die Angabe eines Suchstrings mit --q=Suchstring\n";
+    echo "\t         BenÃ¶tigt die Angabe eines Suchstrings mit --q=Suchstring\n";
     
     
     echo "\nParameter:\n";
@@ -103,7 +103,7 @@ function show_help() {
 }
 
 /*
- * Sucht einen einzelnenm Post anhand einer URI und gibt dessen Rohdaten zurück
+ * Sucht einen einzelnenm Post anhand einer URI und gibt dessen Rohdaten zurÃ¼ck
  */
 function get_post(Config $config, array $options) {
     if ((!isset($options['u'])) && (!isset($options['uri']))) {
@@ -121,7 +121,8 @@ function get_post(Config $config, array $options) {
         $blueskyAPI = new API($config);
         $token = $blueskyAPI->getAccessToken($config->get('bluesky_username'), $config->get('bluesky_password'));
         if (!$token) {
-            throw new Exception("Login fehlgeschlagen. Überprüfe deinen Benutzernamen und dein Passwort.");
+            echo "Login fehlgeschlagen. ÃœberprÃ¼fe deinen Benutzernamen und dein Passwort.";
+            return false;
         }
 
 
@@ -129,10 +130,11 @@ function get_post(Config $config, array $options) {
        
         echo Debugging::get_dump_debug($postdata, false, true);
         
-        
+        return true;
 
     } else {
         echo "No bluesky account in config.json, therfor stopping\n";
+        return false;
     }
     
     
@@ -146,33 +148,42 @@ function get_searchPosts(Config $config, array $options) {
         echo "Please enter a URI for a post to look at with --uri=URI\n";
         exit;
     } 
-    $search = [
-        'q' => $options['q'], // Erforderlich
-        'sort' => 'newest',       // Optional
-        'lang' => 'de',           // Optional
-        'tag' => ''               // Leerer Wert wird ignoriert
-    ];
+    
+    $search = [];
+    $search['q'] = $options['q'];
+    if (isset($options['limit'])) {
+        $search['limit'] = $options['limit'];
+    }
+    if (isset($options['lang'])) {
+        $search['lang'] = $options['lang'];
+    }
+    if (isset($options['tag'])) {
+        $search['tag'] = $options['tag'];
+    }
+
     if ((!empty($config->get('bluesky_username'))) && (!empty($config->get('bluesky_password')))) {
         $blueskyAPI = new API($config);
         $token = $blueskyAPI->getAccessToken($config->get('bluesky_username'), $config->get('bluesky_password'));
         if (!$token) {
-            throw new Exception("Login fehlgeschlagen. Überprüfe deinen Benutzernamen und dein Passwort.");
-        }
+            echo "Login fehlgeschlagen. ÃœberprÃ¼fe deinen Benutzernamen und dein Passwort.";
+            return false;
+        }  
 
 
         $postdata = $blueskyAPI->searchPosts($search);
-        echo get_timeline_output($postdata, $config);
         echo Debugging::get_dump_debug($postdata, false, true);
         
+        return true;
         
 
     } else {
         echo "No bluesky account in config.json, therfor stopping\n";
+        return false;
     }
 
 }
 /*
- * Erstelle Feed und gib diesen zurück
+ * Erstelle Feed und gib diesen zurÃ¼ck
  */
 function createFeed(Config $config) {
     // Routing basierend auf der URL
@@ -195,17 +206,17 @@ function createFeed(Config $config) {
 
 
 /*
- * Gebe Public Timeline zurück
+ * Gebe Public Timeline zurÃ¼ck
  */
 function get_timeline(Config $config) {
     if ((!empty($config->get('bluesky_username'))) && (!empty($config->get('bluesky_password')))) {
         $blueskyAPI = new API($config);
         $token = $blueskyAPI->getAccessToken($config->get('bluesky_username'), $config->get('bluesky_password'));
         if (!$token) {
-            throw new Exception("Login fehlgeschlagen. Überprüfe deinen Benutzernamen und dein Passwort.");
+            throw new Exception("Login fehlgeschlagen. ÃœberprÃ¼fe deinen Benutzernamen und dein Passwort.");
         }
         $timeline = $blueskyAPI->getPublicTimeline();
-        echo "Öffentliche Timeline:\n";
+        echo "Ã–ffentliche Timeline:\n";
         echo get_timeline_output($timeline, $config);
 
     } else {
@@ -221,7 +232,7 @@ function get_authorfeed(Config $config) {
         $blueskyAPI = new API($config);
         $token = $blueskyAPI->getAccessToken($config->get('bluesky_username'), $config->get('bluesky_password'));
         if (!$token) {
-            throw new Exception("Login fehlgeschlagen. Überprüfe deinen Benutzernamen und dein Passwort.");
+            throw new Exception("Login fehlgeschlagen. ÃœberprÃ¼fe deinen Benutzernamen und dein Passwort.");
         }
 
         if (!empty($config->get("timeline-did"))) {
@@ -245,8 +256,8 @@ function get_timeline_output(array $timeline, Config $config): string {
                 foreach ($content as $feedtype => $feeddata) {
                     if ($feedtype == 'post') {
                          $post = new Post($feeddata, $config);
-                        // Füge die Ausgabe des Posts mit getListView() zum Gesamtausgabe-String hinzu
-                        $output .= $post->getListView() . PHP_EOL;
+                        // FÃ¼ge die Ausgabe des Posts mit getListView() zum Gesamtausgabe-String hinzu
+                        $output .= $post->getListView($config) . PHP_EOL;
                         $nr += 1;
                     } else {
              //           echo "feed type $feedtype:\n";
@@ -258,7 +269,7 @@ function get_timeline_output(array $timeline, Config $config): string {
         } elseif ($entry == 'cursor') {
             error_log("Cursor for feed: $feedobject " . date('Y-m-d H:i:s'));
         } else {
-            error_log("Unknown schema object $entry in response timeline " . date('Y-m-d H:i:s'));
+            error_log("Unknown schema object \"$entry\" in response timeline " . date('Y-m-d H:i:s'));
         }
 
 
