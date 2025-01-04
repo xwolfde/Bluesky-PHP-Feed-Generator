@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright (C) 2024 xwolf
+ * Copyright (C) 2025 xwolf
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
