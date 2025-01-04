@@ -156,7 +156,7 @@ class API {
 
         return [
             'cursor' => $response['cursor'] ?? '',
-            'hitsTotal' => (int) ($response['hitsTotal'] ?? 0),
+            'hitsTotal' => (int) ($response['hitsTotal'] ?? count($posts)),
             'posts' => $posts
         ];
         return $response;

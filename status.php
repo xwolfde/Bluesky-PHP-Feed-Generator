@@ -29,6 +29,7 @@ use Bluesky\Config;
 use Bluesky\API;
 use Bluesky\Post;
 use Bluesky\Debugging;
+use Bluesky\Utils;
 
 // Loading config
 $config = new Config();
@@ -170,9 +171,26 @@ function get_searchPosts(Config $config, array $options) {
         }  
 
 
-        $postdata = $blueskyAPI->searchPosts($search);
-        echo Debugging::get_dump_debug($postdata, false, true);
+        $searchdata = $blueskyAPI->searchPosts($search);
         
+        
+      
+        if ($searchdata['hitsTotal'] > 0) {
+            foreach ($searchdata['posts'] as $post) {
+                
+                echo "Text       : ".$post->text."\n";
+                echo "Autor      : ".$post->getAutorHandle()."\n";
+                echo "Erstellt am: ".$post->createdAt."\n";
+                echo "Bluesky URL: ".Utils::getBlueskyURL($post->uri, $post->getAutorHandle())."\n";
+                echo "XRPC URL   : ".Utils::getBlueSkyXRPURL($post->uri)."\n";
+                echo "\n";
+           }
+             
+        } else {
+            echo "Kein Treffer\n";
+              echo Debugging::get_dump_debug($searchdata, false, true);
+        }
+
         return true;
         
 
