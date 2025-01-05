@@ -42,17 +42,13 @@ jobs:
           node -e "const fs = require('fs'); const version = '$new_version'; const packageJson = require('./package.json'); packageJson.version = version; fs.writeFileSync('./package.json', JSON.stringify(packageJson, null, 2));"
           echo "Updated package.json with version: $new_version"
 
-          # Aktualisiere die Version in README.md
-          sed -i "s/Version: .*/Version: $new_version/" README.md
-          echo "Updated README.md with version: $new_version"
-
       - name: Commit changes to main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "actions@github.com"
-          git add package.json README.md
+          git add package.json
           git commit -m "Increment minor version to ${{ steps.extract_version.outputs.new_version }}"
           git push origin main
     
@@ -66,14 +62,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Synchronisiere die aktualisierte Version in dev
-          sed -i "s/Version: .*/Version: ${{ steps.extract_version.outputs.new_version }}/" README.md
-         
-          # Aktualisiere die Version in package.json
           node -e "const fs = require('fs'); const version = '${{ steps.extract_version.outputs.new_version }}'; const packageJson = require('./package.json'); packageJson.version = version; fs.writeFileSync('./package.json', JSON.stringify(packageJson, null, 2));"
           
           echo "Synchronized dev branch with version: ${{ steps.extract_version.outputs.new_version }}"
 
           # Commit and push changes to dev
-          git add package.json README.md
+          git add package.json
           git commit -m "Sync version from main to dev: ${{ steps.extract_version.outputs.new_version }}"
           git push origin dev
