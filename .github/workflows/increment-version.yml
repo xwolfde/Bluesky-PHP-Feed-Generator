@@ -1,0 +1,45 @@
+name: Increment Version
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js (for version handling)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Increment version in readme.txt
+        run: |
+          # Extrahiere die aktuelle Versionsnummer aus der Datei
+          version=$(grep -oP '(?<=Version: )\d+\.\d+\.\d+' readme.txt)
+          echo "Current version: $version"
+
+          # Zerlege die Version und erhöhe die letzte Ziffer
+          IFS='.' read -r major minor patch <<< "$version"
+          patch=$((patch + 1))
+          new_version="$major.$minor.$patch"
+          echo "New version: $new_version"
+
+          # Aktualisiere die Version in der Datei
+          sed -i "s/Version: .*/Version: $new_version/" readme.txt
+
+          # Zeige die aktualisierte Datei (optional)
+          cat readme.txt
+
+      - name: Commit changes
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          git add readme.txt
+          git commit -m "Increment version to $new_version"
+          git push
