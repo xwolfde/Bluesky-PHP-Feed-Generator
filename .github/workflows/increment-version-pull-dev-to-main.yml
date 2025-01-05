@@ -27,7 +27,7 @@ jobs:
       - name: Increment minor version
         run: |
           # Extrahiere die aktuelle Versionsnummer aus readme.txt
-          version=$(grep -oP '(?<=^Version: )\d+\.\d+\.\d+' readme.txt)
+          version=$(grep -oP '(?<=Version: )\d+\.\d+\.\d+' readme.txt)
           echo "Current version: $version"
 
           # Zerlege die Version und erhöhe die Minor-Nummer
@@ -44,12 +44,6 @@ jobs:
           # Aktualisiere die Version in README.md
           sed -i "s/^Version: .*/Version: $new_version/" README.md
           echo "Updated README.md with version: $new_version"
-
-          # Zeige die aktualisierten Dateien (optional)
-          echo "Content of readme.txt:"
-          cat readme.txt
-          echo "Content of README.md:"
-          cat README.md
 
       - name: Commit changes
         env:
