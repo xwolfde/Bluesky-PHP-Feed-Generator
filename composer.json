@@ -1,0 +1,17 @@
+{
+    "name": "xwolf/bluesky-php-feed-generator",
+    "description": "Feed Generator for Bluesky in PHP",
+    "type": "project",
+    "license": "GPL-3.0-or-later",
+    "autoload": {
+        "psr-4": {
+            "Bluesky\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "xwolf"
+        }
+    ],
+    "require": {}
+}

@@ -1,0 +1,21 @@
+{
+    "bluesky_username" : "",
+    "bluesky_password": "",
+    "service_baseurl": "https://bsky.social/xrpc",
+    "xrpc-endpoint": "/xrpc/app.bsky.feed.getFeedSkeleton",
+    "SSL_VERIFYPEER": "false",
+    "exerpt-length": 20,
+     "query_getAuthorFeed": {
+        "filter": "posts_no_replies",
+        "limit": 20
+    },
+    "query_searchPosts": {
+        "lang": "de",
+        "limit": 20,
+        "sort": "latest",
+        "tag": ""
+    },
+     "query_timeline": {
+        "limit": 10
+    }
+}
