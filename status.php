@@ -49,21 +49,19 @@ if (isset($options['h']) || isset($options['help'])) {
 }
 
 if (isset($options['v']) || isset($options['version'])) {
-    
-    $readmeFile = 'readme.txt';
+    $packageFile = 'package.json';
     $version = "unknown";
-    if (file_exists($readmeFile)) {
 
-        $readmeContent = file_get_contents($readmeFile);
-        // Read version number
-        if (preg_match('/Version:\s*([0-9\.]+)/mi', trim($readmeContent), $matches)) {
-            $version = $matches[1];
+    if (file_exists($packageFile)) {
+        $packageContent = file_get_contents($packageFile);
+        $packageJson = json_decode($packageContent, true);
+
+        if (isset($packageJson['version'])) {
+            $version = $packageJson['version'];
         }
-  
-    } 
-    echo "Version: ".$version."\n";
-    
-    
+    }
+
+    echo "Version: " . $version . "\n";
     exit(0);
 }
 if (isset($options['c']) || isset($options['config'])) {
@@ -76,12 +74,13 @@ if (isset($options['c']) || isset($options['config'])) {
 match ($action) {
     'timeline'      => get_timeline($config),
     'autorfeed'     => get_authorfeed($config),
-    'createFeed'    => createFeed($config),
+ //   'createFeed'    => createFeed($config),
     'getPost'       => get_post($config, $options),
     'searchPosts'   => get_searchPosts($config, $options),
     'search'        => get_searchPosts($config, $options),
     'list'          => get_list($config, $options),
     'listindex'     => get_listindex($config, $options),
+    'getProfil'     => get_profil($config, $options),
     default         => show_help()
 };
 
@@ -109,6 +108,8 @@ function show_help() {
     echo "\t             Needs --did=AT Identifier\n";
     echo "\tlist       : Returns a given list\n";
     echo "\t             Needs --did=AT URI\n";
+    echo "\tgetProfil  : Returns profil information of an account\n";
+    echo "\t             Needs --did=DID URI or handle\n";
     
     echo "\nParameter:\n";
     echo "\t--config: Display current config\n";
@@ -117,6 +118,38 @@ function show_help() {
     echo "\t--v: Version\n";
     
 }
+
+
+/*
+ * get_profil
+ */
+function get_profil(Config $config, array $options) {
+    if ((!empty($config->get('bluesky_username'))) && (!empty($config->get('bluesky_password')))) {
+        $blueskyAPI = new API($config);
+        $token = $blueskyAPI->getAccessToken($config->get('bluesky_username'), $config->get('bluesky_password'));
+        if (!$token) {
+            throw new Exception("Login failed. Please check login and passwort in your config file.");
+        }
+    
+        if (!isset($options['did'])) {
+            echo "Please enter a identifier (Handle or DID of account to fetch of)  with --did=AT URI\n";
+            return false;
+        } 
+
+        $search = [];
+        $search['actor'] = $options['did'];
+
+        $listdata = $blueskyAPI->getProfile($search);
+
+        echo Debugging::get_dump_debug($listdata, false, true);
+    
+
+    } else {
+        echo "No bluesky account in config.json, therfor stopping\n";
+    }
+    
+}
+
 
 /*
  * search for a single post by its did uri

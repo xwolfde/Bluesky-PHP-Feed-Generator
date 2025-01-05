@@ -175,7 +175,30 @@ class API {
         return $this->makeRequest($url, "GET", $search);
     }
     
-    
+    /**
+     * Get an account
+     * @param actor
+     * @return array|null List or null on not found
+     */
+    public function getProfile(array $search): ?Profil {
+        if (!$this->token) {
+            throw new \Exception("Access token is required. Call getAccessToken() first.");
+        }
+        if (empty($search['actor'])) {
+            throw new \InvalidArgumentException('Required field actor (Handle or DID of account to fetch profile of.) missing.');
+        }
+        $url = "{$this->baseUrl}/app.bsky.actor.getProfile";
+        
+        $response = $this->makeRequest($url, "GET", $search);
+
+        if (!$response) {
+            error_log("Keine Antwort vom Server.");
+            return null;
+        }
+
+        // Wandelt das Array in ein Profil-Objekt um
+        return new Profil($response, $this->config);
+    }
     
     /*
      * Suchanfrage

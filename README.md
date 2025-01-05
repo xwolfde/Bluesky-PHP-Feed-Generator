@@ -44,6 +44,12 @@ Note: Set SSL_VERIFYPEER to false if your curl-installation isnt capable of usin
 
 returns status informations of the post with the at-uri.
 
+## getProfil
+
+`php status.php --did=xwolf.de getProfil`
+
+returns the proil informations of the user with the given handle
+
 
 
 ### Test and Debug-Cases
