@@ -1,6 +1,6 @@
 {
   "name": "bluesky-php-feed-generator",
-  "version": "1.1.8",
+  "version": "1.1.9",
   "description": "Functions to access Bluesky and generate feeds with PHP",
   "repository": {
     "type": "git",
