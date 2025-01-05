@@ -1,12 +1,12 @@
 # Bluesky PHP Feed-Generator and Queries
 
-[![Aktuelle Version](https://img.shields.io/github/package-json/v/xwolfde/Bluesky-PHP-Feed-Generator/main?label=Version)](https://github.com/xwolfde/Bluesky-PHP-Feed-Generator) [![Release Version](https://img.shields.io/github/v/release/xwolfde/Bluesky-PHP-Feed-Generator?label=Release+Version)](https://github.com/xwolfde/Bluesky-PHP-Feed-Generator/releases/) [![GitHub License](https://img.shields.io/github/license/xwolfde/Bluesky-PHP-Feed-Generator?label=Lizenz)](https://github.com/xwolfde/Bluesky-PHP-Feed-Generator/blob/master/LICENSE) [![GitHub issues](https://img.shields.io/github/issues/xwolfde/Bluesky-PHP-Feed-Generator)](https://github.com/xwolfde/Bluesky-PHP-Feed-Generator/issues)
+[![Release Version](https://img.shields.io/github/v/release/xwolfde/Bluesky-PHP-Feed-Generator?label=Release+Version)](https://github.com/xwolfde/Bluesky-PHP-Feed-Generator/releases/) [![GitHub License](https://img.shields.io/github/license/xwolfde/Bluesky-PHP-Feed-Generator?label=Lizenz)](https://github.com/xwolfde/Bluesky-PHP-Feed-Generator/blob/main/LICENSE) [![GitHub issues](https://img.shields.io/github/issues/xwolfde/Bluesky-PHP-Feed-Generator)](https://github.com/xwolfde/Bluesky-PHP-Feed-Generator/issues)
 
 Functions to access Bluesky and generate feeds with PHP
 
 ## Version
 
-Version: 1.0.0
+Version: 1.0.3
 
 ## Autor 
 
@@ -31,7 +31,7 @@ Notice: You need PHP 8.3 or later to use this skripts.
 
 To start, copy the `config.sample.json` to `config.json` and insert your login-credentials for bluesky into the fields
     "bluesky_username" : "",
-    "bluesky_password": "",
+    "bluesky_password" : "",
 
 
 
