@@ -6,7 +6,7 @@ Functions to access Bluesky and generate feeds with PHP
 
 ## Version
 
-Version: 1.1.5
+Version: 1.1.6
 
 ## Autor 
 
