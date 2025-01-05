@@ -31,7 +31,7 @@ Notice: You need PHP 8.3 or later to use this skripts.
 
 To start, copy the `config.sample.json` to `config.json` and insert your login-credentials for bluesky into the fields
     "bluesky_username" : "",
-    "bluesky_password": "",
+    "bluesky_password" : "",
 
 
 
