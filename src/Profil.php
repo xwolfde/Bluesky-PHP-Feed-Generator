@@ -20,84 +20,68 @@
 
 namespace Bluesky;
 
-class Post {
-    public string $text;
-    public string $uri;
-    public string $cid;
-    public string $createdAt;
-    public string $indexedAt;
-    public ?array $autor;
-    public ?array $embeds;
-    public ?array $facets;
-    public ?array $langs;
-    public ?Config $config;
-    public int $likeCount;
-    public int $repostCount;
-    public int $replyCount;
-    public int $quoteCount;
+class Profil {
+    public string $did;
+    public string $handle;
+    public ?string $createdAt;
+    public ?string $indexedAt;
+    public ?string $displayName;
+    public ?string $description;
+    public ?string $avatar;
+    public ?string $banner;
+    public int $followersCount;
+    public int $followsCount;
+    public int $postsCount;
+    private ?Config $config;
     private array $rawdata;
     
     public function __construct(array $data, ?Config $config = null) {
-        $this->text = $data['record']['text'] ?? '';
-        $this->uri = $data['uri'] ?? '';
-        $this->cid = $data['cid'] ?? '';
-        $this->createdAt = $data['record']['createdAt'] ?? '';
-        $this->indexedAt = $data['record']['indexedAt'] ?? '';
-        $this->likeCount = (int) ($data['record']['likeCount'] ?? 0);
-        $this->repostCount= (int) ($data['record']['repostCount'] ?? 0);
-        $this->replyCount= (int) ($data['record']['replyCount'] ?? 0);
-        $this->quoteCount= (int) ($data['record']['quoteCount'] ?? 0);       
+        $this->did = $data['did'] ?? '';
+        $this->handle = $data['handle'] ?? '';
+        $this->displayName = $data['displayName'] ?? '';
+        $this->description = $data['description'] ?? '';
+        $this->avatar = $data['avatar'] ?? '';
+        $this->banner = $data['banner'] ?? '';
+        $this->createdAt = $data['createdAt'] ?? '';
+        $this->indexedAt = $data['indexedAt'] ?? '';
         
-        $this->autor = $data['author'] ?? null;
-        $this->embeds = $data['record']['embed'] ?? null;
-        $this->facets = $data['record']['facets'] ?? null;
-        $this->langs = $data['record']['langs'] ?? null;
+        
+        $this->followersCount = (int) ($data['followersCount'] ?? 0);
+        $this->followsCount= (int) ($data['followsCount'] ?? 0);
+        $this->postsCount= (int) ($data['postsCount'] ?? 0);
         $this->config = $config ?? null;
         
         // Alle Keys, die wir bereits zugewiesen haben
         $usedKeys = [
-            'text',
-            'uri',
-            'cid',
-            'record'
+            'did',
+            'handle',
+            'displayName',
+            'description',
+            'avatar',
+            'banner',
+            'createdAt',
+            'indexedAt',
+            'followersCount',
+            'followsCount',
+            'postsCount'
         ];
 
         // Nur jene Keys in rawdata speichern, 
         // die nicht bereits zugewiesen wurden
         $remaining = array_diff_key($data, array_flip($usedKeys));
         $this->rawdata = $remaining;
-        
     }
     
     public function setConfig(Config $config) {
         return $this->config = $config;
     }
-    public function getAutorHandle(): ?string {
-        return $this->autor['handle'] ?? null;
-    }
-
-  
- 
-    public function getTags(): ?array {
-        $taglist = [];
-        if ($this->facets) {
-            foreach ($this->facets as $num) {
-                if (isset($num['features'][0]['tag'])) {
-                    $taglist[] = '#'.$num['features'][0]['tag'];
-                }
-            }
-        }
-        
-        return $taglist;
-    }
-    
-    
+       
     
     public function getRawData(): array {
         return $this->rawdata;
     }
     
-    public function getPostView(?string $template = null): string {
+    public function getProfilView(?string $template = null): string {
         if (empty($template)) {
             $template = '';
             $template .= "Text (ex.) : #textexcerpt#".PHP_EOL;
