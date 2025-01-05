@@ -25,9 +25,10 @@ jobs:
           node-version: '16'
 
       - name: Increment minor version
+        id: extract_version  # ID für die Referenzierung
         run: |
-          # Extrahiere die aktuelle Versionsnummer aus readme.txt
-          version=$(grep -oP '(?<=Version: )\d+\.\d+\.\d+' readme.txt)
+          # Hol die Versionsnummer aus package.json
+          version=$(node -p "require('./package.json').version")
           echo "Current version: $version"
 
           # Zerlege die Version und erhöhe die Minor-Nummer
@@ -37,37 +38,44 @@ jobs:
           new_version="$major.$minor.$patch"
           echo "New version: $new_version"
 
-          # Aktualisiere die Version in readme.txt
-          sed -i "s/Version: .*/Version: $new_version/" readme.txt
-          echo "Updated readme.txt with version: $new_version"
+          # Aktualisiere die Version in package.json
+          node -e "const fs = require('fs'); const version = '$new_version'; const packageJson = require('./package.json'); packageJson.version = version; fs.writeFileSync('./package.json', JSON.stringify(packageJson, null, 2));"
+          echo "Updated package.json with version: $new_version"
 
           # Aktualisiere die Version in README.md
           sed -i "s/Version: .*/Version: $new_version/" README.md
           echo "Updated README.md with version: $new_version"
 
+      - name: Save new version to an environment variable
+        env:
+          NEW_VERSION: ${{ steps.extract_version.outputs.new_version }}
+        run: |
+            echo "New version saved: $NEW_VERSION"
+
       - name: Commit changes to main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_VERSION: ${{ env.NEW_VERSION }}
         run: |
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "actions@github.com"
-          git add readme.txt README.md
-          git commit -m "Increment minor version to $new_version"
+          git add package.json README.md
+          git commit -m "Increment minor version to $NEW_VERSION"
           git push origin main
           
       - name: Sync updated version to dev
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_VERSION: ${{ env.NEW_VERSION }}
         run: |
           # Checkout dev branch
           git checkout dev
 
           # Synchronisiere die aktualisierte Version in dev
-          sed -i "s/Version: .*/Version: $new_version/" readme.txt
-          sed -i "s/Version: .*/Version: $new_version/" README.md
-          echo "Synchronized dev branch with version: $new_version"
+          sed -i "s/Version: .*/Version: $NEW_VERSION/" README.md
+          echo "Synchronized dev branch with version: $NEW_VERSION"
 
           # Commit and push changes to dev
-          git add readme.txt README.md
-          git commit -m "Sync version from main to dev: $new_version"
+          git add package.json README.md
+          git commit -m "Sync version from main to dev: $NEW_VERSION"
           git push origin dev
