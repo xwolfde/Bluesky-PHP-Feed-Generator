@@ -55,14 +55,16 @@ jobs:
           git add package.json README.md
           git commit -m "Increment minor version to ${{ steps.extract_version.outputs.new_version }}"
           git push origin main
+    
+      - name: Checkout dev branch
+        uses: actions/checkout@v3
+        with:
+          ref: dev  # Sicherstellen, dass der dev-Branch gecheckt wird
           
       - name: Sync updated version to dev
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Checkout dev branch
-          git checkout dev
-
           # Synchronisiere die aktualisierte Version in dev
           sed -i "s/Version: .*/Version: ${{ steps.extract_version.outputs.new_version }}/" README.md
           echo "Synchronized dev branch with version: ${{ steps.extract_version.outputs.new_version }}"
