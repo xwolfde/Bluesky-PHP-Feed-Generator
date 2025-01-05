@@ -29,8 +29,7 @@ jobs:
 
           # Zerlege die Version und erhöhe die Minor-Nummer
           IFS='.' read -r major minor patch <<< "$version"
-          minor=$((minor + 1))
-          patch=0
+          patch=$((patch + 1))
           new_version="$major.$minor.$patch"
           echo "New version: $new_version"
 
