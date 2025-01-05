@@ -6,7 +6,7 @@ Functions to access Bluesky and generate feeds with PHP
 
 ## Version
 
-Version: 1.1.0
+Version: 1.0.8
 
 ## Autor 
 
@@ -35,9 +35,15 @@ To start, copy the `config.sample.json` to `config.json` and insert your login-c
 
 
 
-## Documentation
+## Example Usage
 
-Coming sooner or later...
+### getPost
+
+`php status.php --uri=at://did:plc:wyxbu4v7nqt6up3l3camwtnu/app.bsky.feed.post/3lemy4yerrk27 getPost`
+
+returns status informations of the post with the at-uri.
+
+
 
 ### Test and Debug-Cases
 

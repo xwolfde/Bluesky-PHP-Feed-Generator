@@ -37,7 +37,7 @@ jobs:
           sed -i "s/Version: .*/Version: $new_version/" readme.txt
 
           # Aktualisiere die Version in README.md
-          sed -i "s/^Version: .*/Version: $new_version/" README.md
+          sed -i "s/Version: .*/Version: $new_version/" README.md
           echo "Updated README.md with version: $new_version"
 
       - name: Commit changes

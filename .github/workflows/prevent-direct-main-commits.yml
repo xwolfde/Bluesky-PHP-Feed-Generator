@@ -1,0 +1,16 @@
+name: Prevent Direct Commits to Main
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  prevent-direct-commits:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Fail if direct commit is detected
+        run: |
+          echo "Direct commits to the 'main' branch are not allowed. Please work on 'dev' branch only!"
+          exit 1
