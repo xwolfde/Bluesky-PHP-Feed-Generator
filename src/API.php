@@ -73,7 +73,7 @@ class API {
      * @param string $uri . Bspw: at://did:plc:wyxbu4v7nqt6up3l3camwtnu/app.bsky.feed.post/3lemy4yerrk27
      * @return array|null . Die Daten des Posts, wenn gefunden
      */
-    public function getPosts(string $uri): ?array {
+    public function getPosts(string $uri): ?Post {
         if (!$this->token) {
             throw new \Exception("Access token is required. Call getAccessToken() first.");
         }
@@ -109,8 +109,18 @@ class API {
         }
 
         $url = "{$this->baseUrl}/app.bsky.feed.getTimeline";
-
-        return $this->makeRequest($url, "GET");
+        
+        // Werte aus der Config laden
+        $configParams = $this->config->get('query_tmeline') ?? [];
+        
+        $search = [];
+        // Fehlende Werte aus der Config ergänzen
+        foreach ($configParams as $key => $value) {
+            if (!array_key_exists($key, $search) || $search[$key] === null || $search[$key] === '') {
+                $search[$key] = $value;
+            }
+        }
+        return $this->makeRequest($url, "GET", $search);
     }
     
     

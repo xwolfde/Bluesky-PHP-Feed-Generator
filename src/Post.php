@@ -30,12 +30,12 @@ class Post {
     public ?array $embeds;
     public ?array $facets;
     public ?array $langs;
-    public ?array $config;
+    public ?Config $config;
     public int $likeCount;
     public int $repostCount;
     public int $replyCount;
     public int $quoteCount;
-    
+    private array $rawdata;
     
     public function __construct(array $data, ?Config $config = null) {
         $this->text = $data['record']['text'] ?? '';
@@ -53,6 +53,7 @@ class Post {
         $this->facets = $data['record']['facets'] ?? null;
         $this->langs = $data['record']['langs'] ?? null;
         $this->config = $config ?? null;
+        $this->rawdata = $data;
     }
     
     public function setConfig(Config $config) {
@@ -66,13 +67,13 @@ class Post {
  
     public function getTags(): ?array {
         $taglist = [];
-
-        foreach ($this->facets as $num) {
-            if (isset($num['features'][0]['tag'])) {
-                $taglist[] = '#'.$num['features'][0]['tag'];
+        if ($this->facets) {
+            foreach ($this->facets as $num) {
+                if (isset($num['features'][0]['tag'])) {
+                    $taglist[] = '#'.$num['features'][0]['tag'];
+                }
             }
         }
-  
         
         return $taglist;
     }
@@ -80,17 +81,26 @@ class Post {
     
     
     public function getRawData(): array {
-        return $this->post;
+        return $this->rawdata;
     }
     
     public function getListView(?string $template = null): string {
-        $template ??= '#autor#: "#textexcerpt#..."  #tags#  (#likes# Likes #reposts# Reposts, #replys# Replys) '
-                . PHP_EOL.'             #created# URI: #id#';
+        if (empty($template)) {
+            $template = '';
+            $template .= "Text (ex.) : #textexcerpt#".PHP_EOL;
+            $template .= "Tags       : #tags#".PHP_EOL;
+            $template .= "Author     : #autor#".PHP_EOL;
+            $template .= "Created at : #created#".PHP_EOL;
+            $template .= "Stats      : #likes# Likes #reposts# Reposts, #replys# Replys".PHP_EOL;
+            $template .= "Bluesky URL: #blueskyurl#".PHP_EOL;
+            $template .= "XRPC URL   : #xrpcurl#".PHP_EOL;
+        }
         
-        
-        $limit = $post->config->get('exerpt-length') ?? 80;
-                
-        $textExcerpt = $this->getText() ? substr(str_replace(["\r", "\n"], ' ', $this->text), 0, $limit)
+        $limit = 80;
+        if ($this->config) {
+            $limit = $this->config->get('exerpt-length');
+        }
+        $textExcerpt = $this->text ? substr(str_replace(["\r", "\n"], ' ', $this->text), 0, $limit)
         : 'N/A';
          
          
@@ -106,8 +116,11 @@ class Post {
             '#replys#' => $this->replyCount ?? '0',
             '#quotes#' => $this->quoteCount ?? '0',
             '#likes#' => $this->likeCount ?? '0',
+            '#blueskyurl#'  => Utils::getBlueskyURL($this->uri, $this->getAutorHandle()) ?? '',
+            '#xrpcurl#' => Utils::getBlueSkyXRPURL($this->uri) ?? ''
         ];
 
+                
         return str_replace(array_keys($replacements), array_values($replacements), $template);
 
     }

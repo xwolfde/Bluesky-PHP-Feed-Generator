@@ -85,7 +85,7 @@ function show_config(Config $config) {
  * Ausgabe der Hilfetexte
  */
 function show_help() {
-    echo "Hilfe: VerfÃ¼gbare Kommandos sind:\n";
+    echo "Hilfe: Commands are:\n";
     echo "\ttimeline: Zeige Public Timeline\n";
     echo "\tautorfeed: Zeige Feed eines Ã¼ber die Config gegebenen Autors\n";
     echo "\tcreatefeed: Erstelle XRPC feed\n";
@@ -104,7 +104,8 @@ function show_help() {
 }
 
 /*
- * Sucht einen einzelnenm Post anhand einer URI und gibt dessen Rohdaten zurÃ¼ck
+ * search for a single post by its did uri
+ * example uri: at://did:plc:wyxbu4v7nqt6up3l3camwtnu/app.bsky.feed.post/3lemy4yerrk27
  */
 function get_post(Config $config, array $options) {
     if ((!isset($options['u'])) && (!isset($options['uri']))) {
@@ -122,14 +123,15 @@ function get_post(Config $config, array $options) {
         $blueskyAPI = new API($config);
         $token = $blueskyAPI->getAccessToken($config->get('bluesky_username'), $config->get('bluesky_password'));
         if (!$token) {
-            echo "Login fehlgeschlagen. ÃœberprÃ¼fe deinen Benutzernamen und dein Passwort.";
+            echo "Login failed. Please check login and passwort in your config file.";
             return false;
         }
 
 
-        $postdata = $blueskyAPI->getPosts($uri);
-       
-        echo Debugging::get_dump_debug($postdata, false, true);
+        $post = $blueskyAPI->getPosts($uri);
+        $post->setConfig($config);
+        echo $post->getListView();
+    
         
         return true;
 
@@ -166,7 +168,7 @@ function get_searchPosts(Config $config, array $options) {
         $blueskyAPI = new API($config);
         $token = $blueskyAPI->getAccessToken($config->get('bluesky_username'), $config->get('bluesky_password'));
         if (!$token) {
-            echo "Login fehlgeschlagen. ÃœberprÃ¼fe deinen Benutzernamen und dein Passwort.";
+            echo "Login failed. Please check login and passwort in your config file.";
             return false;
         }  
 
@@ -176,18 +178,15 @@ function get_searchPosts(Config $config, array $options) {
         
       
         if ($searchdata['hitsTotal'] > 0) {
-            foreach ($searchdata['posts'] as $post) {
+            echo "Found: ".$searchdata['hitsTotal']. " hits\n";
+            foreach ($searchdata['posts'] as $post) {          
+                $post->setConfig($config);
+                echo $post->getListView()."\n";
                 
-                echo "Text       : ".$post->text."\n";
-                echo "Autor      : ".$post->getAutorHandle()."\n";
-                echo "Erstellt am: ".$post->createdAt."\n";
-                echo "Bluesky URL: ".Utils::getBlueskyURL($post->uri, $post->getAutorHandle())."\n";
-                echo "XRPC URL   : ".Utils::getBlueSkyXRPURL($post->uri)."\n";
-                echo "\n";
            }
              
         } else {
-            echo "Kein Treffer\n";
+            echo "Nothing found\n";
               echo Debugging::get_dump_debug($searchdata, false, true);
         }
 
@@ -231,11 +230,12 @@ function get_timeline(Config $config) {
         $blueskyAPI = new API($config);
         $token = $blueskyAPI->getAccessToken($config->get('bluesky_username'), $config->get('bluesky_password'));
         if (!$token) {
-            throw new Exception("Login fehlgeschlagen. ÃœberprÃ¼fe deinen Benutzernamen und dein Passwort.");
+            throw new Exception("Login failed. Please check login and passwort in your config file.");
         }
         $timeline = $blueskyAPI->getPublicTimeline();
         echo "Ã–ffentliche Timeline:\n";
         echo get_timeline_output($timeline, $config);
+        
 
     } else {
         echo "No bluesky account in config.json, therfor stopping\n";
@@ -250,7 +250,7 @@ function get_authorfeed(Config $config) {
         $blueskyAPI = new API($config);
         $token = $blueskyAPI->getAccessToken($config->get('bluesky_username'), $config->get('bluesky_password'));
         if (!$token) {
-            throw new Exception("Login fehlgeschlagen. ÃœberprÃ¼fe deinen Benutzernamen und dein Passwort.");
+            throw new Exception("Login failed. Please check login and passwort in your config file.");
         }
 
         if (!empty($config->get("timeline-did"))) {
@@ -273,13 +273,13 @@ function get_timeline_output(array $timeline, Config $config): string {
             
                 foreach ($content as $feedtype => $feeddata) {
                     if ($feedtype == 'post') {
-                         $post = new Post($feeddata, $config);
-                        // FÃ¼ge die Ausgabe des Posts mit getListView() zum Gesamtausgabe-String hinzu
-                        $output .= $post->getListView($config) . PHP_EOL;
+                        $post = new Post($feeddata);
+                        $post->setConfig($config);
+                        $output .= $post->getListView() . PHP_EOL;
                         $nr += 1;
                     } else {
-             //           echo "feed type $feedtype:\n";
-             //           var_dump($feeddata);
+                 //       echo "feed type $feedtype:\n";
+                 //       echo Debugging::get_dump_debug($feeddata, false, true);
                     }
                 }
             
