@@ -1,0 +1,17 @@
+{
+  "name": "bluesky-php-feed-generator",
+  "version": "1.0.10",
+  "description": "Functions to access Bluesky and generate feeds with PHP",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xwolfde/Bluesky-PHP-Feed-Generator"
+  },
+  "author": {
+    "name": "xwolf",
+    "url": "https://www.xwolf.de"
+  },
+  "license": "GPL-3.0-or-later",
+  "scripts": {
+    "start": "php status.php"
+  }
+}
