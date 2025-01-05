@@ -4,7 +4,6 @@
 namespace Bluesky;
 
 class Config {
-    // Array mit Konfigurationswerten
     private array $config;
     
     /**
