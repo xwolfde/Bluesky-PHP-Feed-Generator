@@ -84,7 +84,7 @@ class Post {
         return $this->rawdata;
     }
     
-    public function getListView(?string $template = null): string {
+    public function getPostView(?string $template = null): string {
         if (empty($template)) {
             $template = '';
             $template .= "Text (ex.) : #textexcerpt#".PHP_EOL;

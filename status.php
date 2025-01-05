@@ -17,11 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/**
- * Getting and displaying status infos
- *
- * @author xwolf
- */
+
 require __DIR__ . '/vendor/autoload.php';
 
 use Bluesky\FeedGenerator;
@@ -53,7 +49,21 @@ if (isset($options['h']) || isset($options['help'])) {
 }
 
 if (isset($options['v']) || isset($options['version'])) {
-    echo "Version: 1.0.0\n";
+    
+    $readmeFile = 'readme.txt';
+    $version = "unknown";
+    if (file_exists($readmeFile)) {
+
+        $readmeContent = file_get_contents($readmeFile);
+        // Read version number
+        if (preg_match('/Version:\s*([0-9\.]+)/mi', trim($readmeContent), $matches)) {
+            $version = $matches[1];
+        }
+  
+    } 
+    echo "Version: ".$version."\n";
+    
+    
     exit(0);
 }
 if (isset($options['c']) || isset($options['config'])) {
@@ -101,8 +111,8 @@ function show_help() {
     echo "\t             Needs --did=AT URI\n";
     
     echo "\nParameter:\n";
-    echo "\t--config: Zeige Config\n";
-    echo "\t--help: Diese Hilfe\n";
+    echo "\t--config: Display current config\n";
+    echo "\t--help: This help\n";
     echo "\t--uri: AT-URI\n";
     echo "\t--v: Version\n";
     
@@ -135,7 +145,7 @@ function get_post(Config $config, array $options) {
 
         $post = $blueskyAPI->getPosts($uri);
         $post->setConfig($config);
-        echo $post->getListView();
+        echo $post->getPostView();
     
         
         return true;
@@ -186,7 +196,7 @@ function get_searchPosts(Config $config, array $options) {
             echo "Found: ".$searchdata['hitsTotal']. " hits\n";
             foreach ($searchdata['posts'] as $post) {          
                 $post->setConfig($config);
-                echo $post->getListView()."\n";
+                echo $post->getPostView()."\n";
                 
            }
              
@@ -280,7 +290,7 @@ function get_timeline_output(array $timeline, Config $config): string {
                     if ($feedtype == 'post') {
                         $post = new Post($feeddata);
                         $post->setConfig($config);
-                        $output .= $post->getListView() . PHP_EOL;
+                        $output .= $post->getPostView() . PHP_EOL;
                         $nr += 1;
                     } else {
                  //       echo "feed type $feedtype:\n";
