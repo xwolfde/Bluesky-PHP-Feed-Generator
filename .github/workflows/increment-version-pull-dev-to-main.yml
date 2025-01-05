@@ -36,7 +36,7 @@ jobs:
           minor=$((minor + 1))
           patch=0
           new_version="$major.$minor.$patch"
-          echo "::set-output name=new_version::$new_version"
+          echo "NEW_VERSION=$new_version" >> $GITHUB_OUTPUT
           
           # Aktualisiere die Version in package.json
           node -e "const fs = require('fs'); const version = '$new_version'; const packageJson = require('./package.json'); packageJson.version = version; fs.writeFileSync('./package.json', JSON.stringify(packageJson, null, 2));"
@@ -46,36 +46,28 @@ jobs:
           sed -i "s/Version: .*/Version: $new_version/" README.md
           echo "Updated README.md with version: $new_version"
 
-      - name: Save new version to an environment variable
-        env:
-          NEW_VERSION: ${{ steps.extract_version.outputs.new_version }}
-        run: |
-            echo "New version saved: $NEW_VERSION"
-
       - name: Commit changes to main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NEW_VERSION: ${{ env.NEW_VERSION }}
         run: |
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "actions@github.com"
           git add package.json README.md
-          git commit -m "Increment minor version to $NEW_VERSION"
+          git commit -m "Increment minor version to ${{ steps.extract_version.outputs.new_version }}"
           git push origin main
           
       - name: Sync updated version to dev
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NEW_VERSION: ${{ env.NEW_VERSION }}
         run: |
           # Checkout dev branch
           git checkout dev
 
           # Synchronisiere die aktualisierte Version in dev
-          sed -i "s/Version: .*/Version: $NEW_VERSION/" README.md
-          echo "Synchronized dev branch with version: $NEW_VERSION"
+          sed -i "s/Version: .*/Version: ${{ steps.extract_version.outputs.new_version }}/" README.md
+          echo "Synchronized dev branch with version: ${{ steps.extract_version.outputs.new_version }}"
 
           # Commit and push changes to dev
           git add package.json README.md
-          git commit -m "Sync version from main to dev: $NEW_VERSION"
+          git commit -m "Sync version from main to dev: ${{ steps.extract_version.outputs.new_version }}"
           git push origin dev
