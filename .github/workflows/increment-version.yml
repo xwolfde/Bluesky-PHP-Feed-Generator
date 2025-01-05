@@ -21,31 +21,34 @@ jobs:
         with:
           node-version: '16'
 
-      - name: Increment version in readme.txt
+      - name: Extract version from package.json
+        id: extract_version  # ID für die Referenzierung
         run: |
-          # Extrahiere die aktuelle Versionsnummer aus der Datei
-          version=$(grep -oP '(?<=Version: )\d+\.\d+\.\d+' readme.txt)
+          # Hol die Versionsnummer aus package.json
+          version=$(node -p "require('./package.json').version")
           echo "Current version: $version"
 
-          # Zerlege die Version und erhöhe die letzte Ziffer
+          # Zerlege die Version und erhöhe die Minor-Nummer
           IFS='.' read -r major minor patch <<< "$version"
           patch=$((patch + 1))
           new_version="$major.$minor.$patch"
-          echo "New version: $new_version"
-
-          # Aktualisiere die Version in der Datei in readme.txt
-          sed -i "s/Version: .*/Version: $new_version/" readme.txt
+          echo "NEW_VERSION=$new_version" >> $GITHUB_OUTPUT
+          
+          # Aktualisiere die Version in package.json
+          node -e "const fs = require('fs'); const version = '$new_version'; const packageJson = require('./package.json'); packageJson.version = version; fs.writeFileSync('./package.json', JSON.stringify(packageJson, null, 2));"
+          echo "Updated package.json with version: $new_version"
 
           # Aktualisiere die Version in README.md
           sed -i "s/Version: .*/Version: $new_version/" README.md
           echo "Updated README.md with version: $new_version"
 
+        
       - name: Commit changes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "actions@github.com"
-          git add readme.txt README.md
-          git commit -m "Increment version to $new_version"
+          git add package.json README.md
+          git commit -m "Increment version to ${{ steps.extract_version.outputs.new_version }}"
           git push
