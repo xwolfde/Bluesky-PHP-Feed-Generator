@@ -6,7 +6,7 @@ Functions to access Bluesky and generate feeds with PHP
 
 ## Version
 
-Version: 1.1.0
+Version: 1.1.8
 
 ## Autor 
 
@@ -33,6 +33,7 @@ To start, copy the `config.sample.json` to `config.json` and insert your login-c
     "bluesky_username" : "",
     "bluesky_password" : "",
 
+Note: Set SSL_VERIFYPEER to false if your curl-installation isnt capable of using SSL.
 
 
 ## Example Usage
