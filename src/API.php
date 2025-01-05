@@ -111,7 +111,7 @@ class API {
         $url = "{$this->baseUrl}/app.bsky.feed.getTimeline";
         
         // Werte aus der Config laden
-        $configParams = $this->config->get('query_tmeline') ?? [];
+        $configParams = $this->config->get('query_timeline') ?? [];
         
         $search = [];
         // Fehlende Werte aus der Config ergänzen
@@ -123,6 +123,59 @@ class API {
         return $this->makeRequest($url, "GET", $search);
     }
     
+      /**
+     * Search for a list
+     * @param array search, with (at-identifier) actor as required, (int) limit optional, (strng) cursor optional
+     * @return array|null List or null on not found
+     */
+    public function getLists(array $search): ?array {
+        if (!$this->token) {
+            throw new \Exception("Access token is required. Call getAccessToken() first.");
+        }
+        if (empty($search['actor'])) {
+            throw new \InvalidArgumentException('Required field actor (of type at-identifier) missing.');
+        }
+        $url = "{$this->baseUrl}/app.bsky.graph.getLists";
+        
+        // Werte aus der Config laden
+        $configParams = $this->config->get('query_getlists') ?? [];
+        
+        // Fehlende Werte aus der Config ergänzen
+        foreach ($configParams as $key => $value) {
+            if (!array_key_exists($key, $search) || $search[$key] === null || $search[$key] === '') {
+                $search[$key] = $value;
+            }
+        }
+        return $this->makeRequest($url, "GET", $search);
+    }
+    
+     /**
+     * Search for a list
+     * @param array search, with (at-uri) list as required, (int) limit optional, (strng) cursor optional
+     * @return array|null List or null on not found
+     */
+    public function getList(array $search): ?array {
+        if (!$this->token) {
+            throw new \Exception("Access token is required. Call getAccessToken() first.");
+        }
+        if (empty($search['list'])) {
+            throw new \InvalidArgumentException('Required field list (of type at-uri) missing.');
+        }
+        $url = "{$this->baseUrl}/app.bsky.graph.getList";
+        
+        // Werte aus der Config laden
+        $configParams = $this->config->get('query_getlist') ?? [];
+        
+        // Fehlende Werte aus der Config ergänzen
+        foreach ($configParams as $key => $value) {
+            if (!array_key_exists($key, $search) || $search[$key] === null || $search[$key] === '') {
+                $search[$key] = $value;
+            }
+        }
+        return $this->makeRequest($url, "GET", $search);
+    }
+    
+    
     
     /*
      * Suchanfrage
@@ -133,7 +186,7 @@ class API {
 
           // Sicherstellen, dass das Feld 'q' vorhanden ist
         if (empty($search['q'])) {
-            throw new \InvalidArgumentException('Das Feld "q" ist erforderlich.');
+            throw new \InvalidArgumentException('Required field q for the search string is missing.');
         }
 
         // Werte aus der Config laden
@@ -150,12 +203,12 @@ class API {
         $response = $this->makeRequest($endpoint, 'GET', $search);
 
         if (!$response) {
-            error_log('Keine Ergebnisse für die Suchanfrage gefunden.');
+            error_log('No results found.');
             return null;
         }
         // Validieren der API-Antwort
         if (!isset($response['posts'])) {
-            throw new \RuntimeException('Ungültige API-Antwort.');
+            throw new \RuntimeException('Invalid api response');
         }
 
         // Umwandeln der Post-Daten in Post-Objekte

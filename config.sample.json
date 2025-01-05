@@ -15,7 +15,7 @@
         "sort": "latest",
         "tag": ""
     },
-     "query_tmeline": {
+     "query_timeline": {
         "limit": 10
     }
 }

@@ -37,7 +37,7 @@ $config = new Config();
 
 // Konfiguration der Kurz- und Langoptionen
 $shortopts = "hvcu:q:"; // -h, -v, -c <file>
-$longopts = ["help", "version", "config", "uri:", "limit:", "tag:", "lang:", "q:"]; 
+$longopts = ["help", "version", "config", "uri:", "limit:", "tag:", "lang:", "q:","did:"]; 
 
 // Optionen parsen
 $options = getopt($shortopts, $longopts);
@@ -64,13 +64,15 @@ if (isset($options['c']) || isset($options['config'])) {
 
 
 match ($action) {
-    'timeline' => get_timeline($config),
-    'autorfeed' => get_authorfeed($config),
+    'timeline'      => get_timeline($config),
+    'autorfeed'     => get_authorfeed($config),
     'createFeed'    => createFeed($config),
-    'getPost'   => get_post($config, $options),
-    'searchPosts'    => get_searchPosts($config, $options),
-    'search'    => get_searchPosts($config, $options),
-    default => show_help()
+    'getPost'       => get_post($config, $options),
+    'searchPosts'   => get_searchPosts($config, $options),
+    'search'        => get_searchPosts($config, $options),
+    'list'          => get_list($config, $options),
+    'listindex'     => get_listindex($config, $options),
+    default         => show_help()
 };
 
 
@@ -86,14 +88,17 @@ function show_config(Config $config) {
  */
 function show_help() {
     echo "Hilfe: Commands are:\n";
-    echo "\ttimeline: Zeige Public Timeline\n";
-    echo "\tautorfeed: Zeige Feed eines Ã¼ber die Config gegebenen Autors\n";
-    echo "\tcreatefeed: Erstelle XRPC feed\n";
-    echo "\tgetPost: Rufe einen einzelnen Post ab und zeigt alle zugehÃ¶rigen Daten an.\n";
-    echo "\t         BenÃ¶tigt die Angabe der URI mit --uri=AT-URI\n";
-    echo "\tsearchPosts: Suche nach Posts\n";
-    echo "\t         BenÃ¶tigt die Angabe eines Suchstrings mit --q=Suchstring\n";
-    
+    echo "\ttimeline   : Display public timeline\n";
+    echo "\tautorfeed  : Display feed of the given author\n";
+  //  echo "\tcreatefeed: Erstelle XRPC feed\n";
+    echo "\tgetPost    : Loads a defined post.\n";
+    echo "\t             Needs --uri=AT-URI\n";
+    echo "\tsearchPosts: Search for posts.\n";
+    echo "\t             Needs --q=Searchstring\n";
+    echo "\tlistindex  : Returns the index of lists\n";
+    echo "\t             Needs --did=AT Identifier\n";
+    echo "\tlist       : Returns a given list\n";
+    echo "\t             Needs --did=AT URI\n";
     
     echo "\nParameter:\n";
     echo "\t--config: Zeige Config\n";
@@ -289,11 +294,68 @@ function get_timeline_output(array $timeline, Config $config): string {
         } else {
             error_log("Unknown schema object \"$entry\" in response timeline " . date('Y-m-d H:i:s'));
         }
-
-
     }
 
     return $output;
     
 }
 
+/*
+ * Get a index of lists
+ */
+function get_listindex(Config $config, array $options) {
+    if ((!empty($config->get('bluesky_username'))) && (!empty($config->get('bluesky_password')))) {
+        $blueskyAPI = new API($config);
+        $token = $blueskyAPI->getAccessToken($config->get('bluesky_username'), $config->get('bluesky_password'));
+        if (!$token) {
+            throw new Exception("Login failed. Please check login and passwort in your config file.");
+        }
+    
+        if (!isset($options['did'])) {
+            echo "Please enter list identifier (at-uri)  with --did=AT Identifier\n";
+            return false;
+        } 
+
+        $search = [];
+        $search['actor'] = $options['did'];
+        if (isset($options['limit'])) {
+            $search['limit'] = $options['limit'];
+        }
+        $listdata = $blueskyAPI->getLists($search);
+
+        echo Debugging::get_dump_debug($listdata, false, true);
+    
+    } else {
+       echo "No bluesky account in config.json, therfor stopping\n";
+    }
+}
+/*
+ * Get a list
+ */
+function get_list(Config $config, array $options) {
+    if ((!empty($config->get('bluesky_username'))) && (!empty($config->get('bluesky_password')))) {
+        $blueskyAPI = new API($config);
+        $token = $blueskyAPI->getAccessToken($config->get('bluesky_username'), $config->get('bluesky_password'));
+        if (!$token) {
+            throw new Exception("Login failed. Please check login and passwort in your config file.");
+        }
+    
+        if (!isset($options['did'])) {
+            echo "Please enter list identifier (at-uri)  with --did=AT URI\n";
+            return false;
+        } 
+
+        $search = [];
+        $search['list'] = $options['did'];
+        if (isset($options['limit'])) {
+            $search['limit'] = $options['limit'];
+        }
+        $listdata = $blueskyAPI->getList($search);
+
+        echo Debugging::get_dump_debug($listdata, false, true);
+    
+
+    } else {
+        echo "No bluesky account in config.json, therfor stopping\n";
+    }
+}
