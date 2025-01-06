@@ -26,6 +26,7 @@ use Bluesky\API;
 use Bluesky\Post;
 use Bluesky\Debugging;
 use Bluesky\Profil;
+use Bluesky\Lists;
 
 // Loading config
 $config = new Config();
@@ -363,8 +364,19 @@ function get_listindex(Config $config, array $options) {
             $search['limit'] = $options['limit'];
         }
         $listdata = $blueskyAPI->getLists($search);
+        if (empty($listdata)) {
+            echo "No list followed by actor found.\n";
+            return;
+        }
+        
+        foreach ($listdata as $list) {
+            echo $list->getListsView() . PHP_EOL;
+        }
+                
+        
+       
 
-        echo Debugging::get_dump_debug($listdata, false, true);
+       
     
     } else {
        echo "No bluesky account in config.json, therfor stopping\n";

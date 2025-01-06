@@ -41,7 +41,7 @@ class Post {
     
     public function __construct(array $data, ?Config $config = null) {
         
-        echo var_dump($data);
+        // echo var_dump($data);
         
         
         $this->uri = $data['uri'] ?? '';
@@ -158,7 +158,7 @@ class Post {
     public function getBlueskyURL(): string {
         // Überprüfen, ob die URI das richtige Format hat
         if (!preg_match('/^at:\/\/did:plc:([a-z0-9]+)\/app\.bsky\.feed\.post\/([a-z0-9]+)$/', $this->uri, $matches)) {
-            throw new \InvalidArgumentException("Ungültige URI: ".$this->uri);
+            throw new \InvalidArgumentException("Invalid URI: ".$this->uri);
         }
         if ($this->getAutorHandle()) {
             $profileId = $this->getAutorHandle();

@@ -146,7 +146,21 @@ class API {
                 $search[$key] = $value;
             }
         }
-        return $this->makeRequest($url, "GET", $search);
+         $response = $this->makeRequest($url, "GET", $search);
+
+        // Falls keine sinnvolle Antwort vorliegt oder 'lists' nicht vorhanden ist, null zurückgeben
+        if (!$response || !isset($response['lists']) || !is_array($response['lists'])) {
+            return null;
+        }
+
+        // Jedes Element in 'lists' in ein Objekt der Klasse Lists umwandeln
+        $listsObjects = [];
+        foreach ($response['lists'] as $num => $listData) {
+            
+           $listsObjects[] = new Lists($listData, $this->config);
+        }
+
+        return $listsObjects;
     }
     
      /**

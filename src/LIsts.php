@@ -98,7 +98,12 @@ class Profil {
             $template .= "Description: #description#".PHP_EOL;
         }
         
+        $limit = 80;
+        if ($this->config) {
+            $limit = $this->config->get('exerpt-length');
+        }
 
+         
         // Platzhalter mit den entsprechenden Werten ersetzen
         $replacements = [
             '#handle#' => $this->handle ?? 'N/A',
