@@ -86,7 +86,7 @@ class API {
          $response = $this->makeRequest($url, "GET", $data);
          
         if (!$response || empty($response['posts'])) {
-              error_log("Keine Posts für URI gefunden: $uri");
+              error_log("No post found for: $uri");
               return null;
         }
 
@@ -146,7 +146,21 @@ class API {
                 $search[$key] = $value;
             }
         }
-        return $this->makeRequest($url, "GET", $search);
+         $response = $this->makeRequest($url, "GET", $search);
+
+        // Falls keine sinnvolle Antwort vorliegt oder 'lists' nicht vorhanden ist, null zurückgeben
+        if (!$response || !isset($response['lists']) || !is_array($response['lists'])) {
+            return null;
+        }
+
+        // Jedes Element in 'lists' in ein Objekt der Klasse Lists umwandeln
+        $listsObjects = [];
+        foreach ($response['lists'] as $num => $listData) {
+            
+           $listsObjects[] = new Lists($listData, $this->config);
+        }
+
+        return $listsObjects;
     }
     
      /**
@@ -172,7 +186,49 @@ class API {
                 $search[$key] = $value;
             }
         }
-        return $this->makeRequest($url, "GET", $search);
+         // API-Anfrage
+        $response = $this->makeRequest($url, "GET", $search);
+
+        // Falls keine gültige Antwort vorliegt, Abbruch mit null
+        if (!$response) {
+            return null;
+        }
+
+        // Erwartete Felder prüfen
+        if (!isset($response['list'], $response['items'])) {
+            // Wenn Felder fehlen, kann man hier entweder null oder eine Exception werfen
+            return null;
+        }
+
+        // Umwandeln des Feldes 'list' in ein Listen-Objekt (Class Lists)
+        $listsObject = new Lists($response['list'], $this->config);
+        $cursor = isset($response['cursor']) ? (string) $response['cursor'] : '';
+        
+        $items = [];
+        if (isset($response['items']) && is_array($response['items'])) {
+            foreach ($response['items'] as $item) {
+                // uri als string
+                $uri = $item['uri'] ?? '';
+
+                // subject als Profil-Objekt
+                $profilObj = null;
+                if (isset($item['subject']) && is_array($item['subject'])) {
+                    $profilObj = new Profil($item['subject'], $this->config);
+                }
+
+                $items[] = [
+                    'uri'     => $uri,
+                    'subject' => $profilObj
+                ];
+            }
+        }
+        
+        // Rückgabe als assoziatives Array
+        return [
+            'cursor' => $cursor,
+            'list'   => $listsObject,
+            'items'  => $items
+        ];
     }
     
     /**

@@ -40,16 +40,25 @@ Note: Set SSL_VERIFYPEER to false if your curl-installation isnt capable of usin
 
 returns status informations of the post with the at-uri.
 
-## getProfil
+### getProfil
 
 `php status.php --did=xwolf.de getProfil`
 
 returns the proil informations of the user with the given handle
 
+### listindex
 
+`php status.php --did=did:plc:wyxbu4v7nqt6up3l3camwtnu listindex` 
 
-### Test and Debug-Cases
+returns the index of a lists of a actor with the given did
+
+### list
+
+`php status.php --did=at://did:plc:wyxbu4v7nqt6up3l3camwtnu/app.bsky.graph.list/3kfdow6lmdr27 list`
+
+returns a single list with its members
+
+## Documentation
 
 * Bluesky API Reference: https://docs.bsky.app/docs/category/http-reference
-* Public XRPC API XCall for a Post: https://public.api.bsky.app/xrpc/app.bsky.feed.getPosts?uris=at://did:plc:wyxbu4v7nqt6up3l3camwtnu/app.bsky.feed.post/3lemy4yerrk27
-* Same Post on Bluesky Webapp: 
+
