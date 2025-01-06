@@ -17,5 +17,8 @@
     },
      "query_timeline": {
         "limit": 10
+    },
+    "query_getlist": {
+        "limit": 100
     }
 }

@@ -403,9 +403,51 @@ function get_list(Config $config, array $options) {
         if (isset($options['limit'])) {
             $search['limit'] = $options['limit'];
         }
+        if (isset($options['cursor'])) {
+            $search['cursor'] = $options['cursor'];
+        }
         $listdata = $blueskyAPI->getList($search);
+        if (!$listdata) {
+            echo "List not found\n";
+            return false;
+        }
+        
+        echo $listdata['list']->getListsView() . PHP_EOL;
+        if (count($listdata['items']) > 0) {
+            // Array with all list items
+            $itemlist = $listdata['items'];
 
-        echo Debugging::get_dump_debug($listdata, false, true);
+            if ($listdata['cursor']) {
+                // list not complete yet. have to make requests until cursor is empty
+                $cursor = $listdata['cursor'];
+                while(!empty($cursor)) {
+                    echo "New request with cursor = {$cursor}\n";
+                    $search['cursor'] = $cursor;
+                    $newListdata = $blueskyAPI->getList($search);
+
+                    // Wenn keine neuen Daten oder ungültige Antwort, abbrechen
+                    if (!$newListdata) {
+                        echo "No further data received.\n";
+                        break;
+                    }
+
+                    // Cursor aktualisieren
+                    $cursor = $newListdata['cursor'];
+
+                    // Neu geladene Items an $itemlist anhängen
+                    $itemlist = array_merge($itemlist, $newListdata['items']);
+                }
+            }
+            // Jetzt sind alle Einträge in $itemlist
+            echo "Total items in list: " . count($itemlist) . "\n";
+
+            // Beispielhafter Durchlauf aller Items
+            foreach ($itemlist as $item => $user) {
+               echo $item.". ".$user['subject']->handle." - ".$user['subject']->displayName." ( {$user['uri']} )\n";
+            }
+        }
+        
+     //   echo Debugging::get_dump_debug($listdata['items'], false, true);
     
 
     } else {

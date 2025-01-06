@@ -106,7 +106,7 @@ class Lists {
             '#listItemCount#' => $this->listItemCount ?? '0',
             '#avatar#' => $this->avatar ?? 'N/A',
             '#blueskyurl#'  => $this->getBlueskyURL(),
-            '#xrpcurl#' => $this->getBlueSkyXRPURL()
+            '#xrpcurl#' => $this->getBlueSkyXRPCURL()
         ];
 
                 
@@ -141,7 +141,7 @@ class Lists {
      /**
      * get XRPC URL for profile
      */
-    public function getBlueSkyXRPURL(): string {
+    public function getBlueSkyXRPCURL(): string {
         return "https://public.api.bsky.app/xrpc/app.bsky.graph.getList?list=" . urlencode($this->uri);
     }
 }

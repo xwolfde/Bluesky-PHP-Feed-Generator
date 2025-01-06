@@ -112,7 +112,7 @@ class Profil {
             '#avatar#' => $this->avatar ?? 'N/A',
             '#banner#' => $this->banner ?? 'N/A',
             '#blueskyurl#'  => $this->getBlueskyURL(),
-            '#xrpcurl#' => $this->getBlueSkyXRPURL()
+            '#xrpcurl#' => $this->getBlueSkyXRPCURL()
         ];
 
                 
@@ -129,7 +129,7 @@ class Profil {
      /**
      * get XRPC URL for profile
      */
-    public function getBlueSkyXRPURL(): string {
+    public function getBlueSkyXRPCURL(): string {
         return "https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=" . urlencode($this->did);
     }
 }

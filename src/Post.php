@@ -144,7 +144,7 @@ class Post {
             '#quotes#' => $this->quoteCount ?? '0',
             '#likes#' => $this->likeCount ?? '0',
             '#blueskyurl#'  => $this->getBlueskyURL() ?? '',
-            '#xrpcurl#' => $this->getBlueSkyXRPURL() ?? ''
+            '#xrpcurl#' => $this->getBlueSkyXRPCURL() ?? ''
         ];
 
                 
@@ -173,7 +173,7 @@ class Post {
     /**
      * gets XRPC URL for post
      */
-    public function getBlueSkyXRPURL(): string {
+    public function getBlueSkyXRPCURL(): string {
         return "https://public.api.bsky.app/xrpc/app.bsky.feed.getPosts?uris=" . urlencode($this->uri);
     }
 }

@@ -52,6 +52,11 @@ returns the proil informations of the user with the given handle
 
 returns the index of a lists of a actor with the given did
 
+### list
+
+`php status.php --did=at://did:plc:wyxbu4v7nqt6up3l3camwtnu/app.bsky.graph.list/3kfdow6lmdr27 list`
+
+returns a single list with its members
 
 ## Documentation
 
