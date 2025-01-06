@@ -26,7 +26,7 @@ class Post {
     public string $cid;
     public string $createdAt;
     public string $indexedAt;
-    public ?array $autor;
+    public ?Profil $autor;
     public ?array $embeds;
     public ?array $facets;
     public ?array $langs;
@@ -35,35 +35,49 @@ class Post {
     public int $repostCount;
     public int $replyCount;
     public int $quoteCount;
+    public ?array $viewer;
+    public ?array $labels;
     private array $rawdata;
     
     public function __construct(array $data, ?Config $config = null) {
-        $this->text = $data['record']['text'] ?? '';
+        
+        echo var_dump($data);
+        
+        
         $this->uri = $data['uri'] ?? '';
         $this->cid = $data['cid'] ?? '';
         $this->createdAt = $data['record']['createdAt'] ?? '';
-        $this->indexedAt = $data['record']['indexedAt'] ?? '';
-        $this->likeCount = (int) ($data['record']['likeCount'] ?? 0);
-        $this->repostCount= (int) ($data['record']['repostCount'] ?? 0);
-        $this->replyCount= (int) ($data['record']['replyCount'] ?? 0);
-        $this->quoteCount= (int) ($data['record']['quoteCount'] ?? 0);       
-        
-        $this->autor = $data['author'] ?? null;
-        $this->embeds = $data['record']['embed'] ?? null;
-        $this->facets = $data['record']['facets'] ?? null;
         $this->langs = $data['record']['langs'] ?? null;
+        $this->text = $data['record']['text'] ?? '';
+        $this->embeds = $data['record']['embed'] ?? null;
+        $this->facets = $data['record']['facets'] ?? null;     
+        
+        $this->indexedAt = $data['indexedAt'] ?? '';
+        $this->likeCount = (int) ($data['likeCount'] ?? 0);
+        $this->repostCount= (int) ($data['repostCount'] ?? 0);
+        $this->replyCount= (int) ($data['replyCount'] ?? 0);
+        $this->quoteCount= (int) ($data['quoteCount'] ?? 0);       
+        
+        $this->autor = new Profil($data['author']);
+        $this->viewer = $data['viewer'] ?? null;    
+        $this->labels = $data['labels'] ?? null;   
         $this->config = $config ?? null;
         
-        // Alle Keys, die wir bereits zugewiesen haben
+        // Everything else move in rawdata       
         $usedKeys = [
             'text',
             'uri',
             'cid',
-            'record'
+            'record',
+            'author',
+            'indexedAt',
+            'likeCount',
+            'repostCount',
+            'quoteCount',
+            'replyCount',
+            'viewer',
+            'labels'
         ];
-
-        // Nur jene Keys in rawdata speichern, 
-        // die nicht bereits zugewiesen wurden
         $remaining = array_diff_key($data, array_flip($usedKeys));
         $this->rawdata = $remaining;
         
@@ -73,7 +87,7 @@ class Post {
         return $this->config = $config;
     }
     public function getAutorHandle(): ?string {
-        return $this->autor['handle'] ?? null;
+        return $this->autor->handle ?? null;
     }
 
   
@@ -104,7 +118,7 @@ class Post {
             $template .= "Tags       : #tags#".PHP_EOL;
             $template .= "Author     : #autor#".PHP_EOL;
             $template .= "Created at : #created#".PHP_EOL;
-            $template .= "Stats      : #likes# Likes #reposts# Reposts, #replys# Replys".PHP_EOL;
+            $template .= "Stats      : #likes# Likes, #reposts# Reposts, #replys# Replys".PHP_EOL;
             $template .= "Bluesky URL: #blueskyurl#".PHP_EOL;
             $template .= "XRPC URL   : #xrpcurl#".PHP_EOL;
         }
@@ -129,12 +143,37 @@ class Post {
             '#replys#' => $this->replyCount ?? '0',
             '#quotes#' => $this->quoteCount ?? '0',
             '#likes#' => $this->likeCount ?? '0',
-            '#blueskyurl#'  => Utils::getBlueskyURL($this->uri, $this->getAutorHandle()) ?? '',
-            '#xrpcurl#' => Utils::getBlueSkyXRPURL($this->uri) ?? ''
+            '#blueskyurl#'  => $this->getBlueskyURL() ?? '',
+            '#xrpcurl#' => $this->getBlueSkyXRPURL() ?? ''
         ];
 
                 
         return str_replace(array_keys($replacements), array_values($replacements), $template);
 
+    }
+    
+     /**
+     * gets public Bluesky-URL for post
+     */
+    public function getBlueskyURL(): string {
+        // Überprüfen, ob die URI das richtige Format hat
+        if (!preg_match('/^at:\/\/did:plc:([a-z0-9]+)\/app\.bsky\.feed\.post\/([a-z0-9]+)$/', $this->uri, $matches)) {
+            throw new \InvalidArgumentException("Ungültige URI: ".$this->uri);
+        }
+        if ($this->getAutorHandle()) {
+            $profileId = $this->getAutorHandle();
+        } else {
+            $profileId = $matches[0];
+        }
+        $postId = $matches[2];
+
+        return "https://bsky.app/profile/{$profileId}/post/{$postId}";
+    }
+
+    /**
+     * gets XRPC URL for post
+     */
+    public function getBlueSkyXRPURL(): string {
+        return "https://public.api.bsky.app/xrpc/app.bsky.feed.getPosts?uris=" . urlencode($this->uri);
     }
 }

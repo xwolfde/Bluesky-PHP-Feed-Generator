@@ -25,7 +25,7 @@ use Bluesky\Config;
 use Bluesky\API;
 use Bluesky\Post;
 use Bluesky\Debugging;
-use Bluesky\Utils;
+use Bluesky\Profil;
 
 // Loading config
 $config = new Config();
@@ -139,9 +139,9 @@ function get_profil(Config $config, array $options) {
         $search = [];
         $search['actor'] = $options['did'];
 
-        $listdata = $blueskyAPI->getProfile($search);
-
-        echo Debugging::get_dump_debug($listdata, false, true);
+        $profil = $blueskyAPI->getProfile($search);
+        $profil->setConfig($config);  
+        echo $profil->getProfilView() . PHP_EOL;
     
 
     } else {
@@ -179,8 +179,8 @@ function get_post(Config $config, array $options) {
         $post = $blueskyAPI->getPosts($uri);
         $post->setConfig($config);
         echo $post->getPostView();
-    
-        
+
+         
         return true;
 
     } else {
@@ -281,7 +281,7 @@ function get_timeline(Config $config) {
             throw new Exception("Login failed. Please check login and passwort in your config file.");
         }
         $timeline = $blueskyAPI->getPublicTimeline();
-        echo "Ã–ffentliche Timeline:\n";
+        echo "Timeline:\n";
         echo get_timeline_output($timeline, $config);
         
 
@@ -314,7 +314,6 @@ function get_authorfeed(Config $config) {
 
 function get_timeline_output(array $timeline, Config $config): string {
     $output = "";
-    $nr = 0;
     foreach ($timeline as $entry => $feedobject) {    
         if ($entry == 'feed') {
             foreach ($feedobject as $content) {
@@ -324,7 +323,6 @@ function get_timeline_output(array $timeline, Config $config): string {
                         $post = new Post($feeddata);
                         $post->setConfig($config);
                         $output .= $post->getPostView() . PHP_EOL;
-                        $nr += 1;
                     } else {
                  //       echo "feed type $feedtype:\n";
                  //       echo Debugging::get_dump_debug($feeddata, false, true);

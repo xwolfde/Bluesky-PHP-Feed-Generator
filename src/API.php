@@ -86,7 +86,7 @@ class API {
          $response = $this->makeRequest($url, "GET", $data);
          
         if (!$response || empty($response['posts'])) {
-              error_log("Keine Posts für URI gefunden: $uri");
+              error_log("No post found for: $uri");
               return null;
         }
 

@@ -33,6 +33,8 @@ class Profil {
     public int $followsCount;
     public int $postsCount;
     private ?Config $config;
+    public ?array $labels;
+    public ?array $pinnedPost;
     private array $rawdata;
     
     public function __construct(array $data, ?Config $config = null) {
@@ -44,14 +46,15 @@ class Profil {
         $this->banner = $data['banner'] ?? '';
         $this->createdAt = $data['createdAt'] ?? '';
         $this->indexedAt = $data['indexedAt'] ?? '';
-        
+        $this->labels = $data['labels'] ?? null;
+        $this->pinnedPost = $data['pinnedPost'] ?? null;
         
         $this->followersCount = (int) ($data['followersCount'] ?? 0);
         $this->followsCount= (int) ($data['followsCount'] ?? 0);
         $this->postsCount= (int) ($data['postsCount'] ?? 0);
         $this->config = $config ?? null;
         
-        // Alle Keys, die wir bereits zugewiesen haben
+        // Everything else move in rawdata       
         $usedKeys = [
             'did',
             'handle',
@@ -63,11 +66,10 @@ class Profil {
             'indexedAt',
             'followersCount',
             'followsCount',
-            'postsCount'
+            'postsCount',
+            'labels',
+            'pinnedPost'
         ];
-
-        // Nur jene Keys in rawdata speichern, 
-        // die nicht bereits zugewiesen wurden
         $remaining = array_diff_key($data, array_flip($usedKeys));
         $this->rawdata = $remaining;
     }
@@ -84,41 +86,55 @@ class Profil {
     public function getProfilView(?string $template = null): string {
         if (empty($template)) {
             $template = '';
-            $template .= "Text (ex.) : #textexcerpt#".PHP_EOL;
-            $template .= "Tags       : #tags#".PHP_EOL;
-            $template .= "Author     : #autor#".PHP_EOL;
-            $template .= "Created at : #created#".PHP_EOL;
-            $template .= "Stats      : #likes# Likes #reposts# Reposts, #replys# Replys".PHP_EOL;
+            $template .= "Handle     : #handle#".PHP_EOL;
+            $template .= "DID        : #did#".PHP_EOL;
+            $template .= "DisplayName: #displayName#".PHP_EOL;
+            $template .= "Avatar     : #avatar#".PHP_EOL;
+            $template .= "Banner     : #banner#".PHP_EOL;
+            $template .= "Stats      : #followersCount# Follower, #followsCount# Follows, #postCount# Posts".PHP_EOL;
+            $template .= "Created    : #created#".PHP_EOL;
             $template .= "Bluesky URL: #blueskyurl#".PHP_EOL;
             $template .= "XRPC URL   : #xrpcurl#".PHP_EOL;
+            $template .= "Description: #description#".PHP_EOL;
         }
         
         $limit = 80;
         if ($this->config) {
             $limit = $this->config->get('exerpt-length');
         }
-        $textExcerpt = $this->text ? substr(str_replace(["\r", "\n"], ' ', $this->text), 0, $limit)
-        : 'N/A';
-         
+
          
         // Platzhalter mit den entsprechenden Werten ersetzen
         $replacements = [
-            '#autor#' => $this->getAutorHandle() ?? 'N/A',
-            '#text#' => $this->text ?? 'N/A',
-            '#textexcerpt#' => $textExcerpt,
+            '#handle#' => $this->handle ?? 'N/A',
+            '#did#' => $this->did ?? 'N/A',
             '#created#' => $this->createdAt ?? 'N/A',
-            '#id#' => $this->uri ?? 'N/A',
-            '#tags#' => implode(', ', $this->getTags() ?? []),
-            '#reposts#' => $this->repostCount ?? '0',
-            '#replys#' => $this->replyCount ?? '0',
-            '#quotes#' => $this->quoteCount ?? '0',
-            '#likes#' => $this->likeCount ?? '0',
-            '#blueskyurl#'  => Utils::getBlueskyURL($this->uri, $this->getAutorHandle()) ?? '',
-            '#xrpcurl#' => Utils::getBlueSkyXRPURL($this->uri) ?? ''
+            '#indexedat#' => $this->indexedAt ?? 'N/A',
+            '#description#' => $this->description ?? 'N/A',
+            '#followersCount#' => $this->followersCount ?? '0',
+            '#followsCount#' => $this->followsCount ?? '0',
+            '#postCount#' => $this->postCount ?? '0',
+            '#avatar#' => $this->avatar ?? 'N/A',
+            '#banner#' => $this->banner ?? 'N/A',
+            '#blueskyurl#'  => $this->getBlueskyURL(),
+            '#xrpcurl#' => $this->getBlueSkyXRPURL()
         ];
 
                 
         return str_replace(array_keys($replacements), array_values($replacements), $template);
 
+    }
+    
+    /*
+     * Get public Bluesky URL for profil
+     */
+    public function getBlueskyURL(): string {       
+        return "https://bsky.app/profile/{$this->handle}";
+    }
+     /**
+     * get XRPC URL for profile
+     */
+    public function getBlueSkyXRPURL(): string {
+        return "https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=" . urlencode($this->did);
     }
 }
