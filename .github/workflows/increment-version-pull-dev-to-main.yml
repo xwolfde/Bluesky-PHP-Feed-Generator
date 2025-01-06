@@ -1,4 +1,4 @@
-name: Increment Minor Version
+name: Increment Minor Version on Pull into Main
 
 on:
   pull_request:

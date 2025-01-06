@@ -1,4 +1,4 @@
-name: Increment Version
+name: Increment Patch Version for Dev
 
 on:
   push:
@@ -10,6 +10,8 @@ permissions:
   
 jobs:
   update-version:
+    # Nur ausführen, wenn der Actor != GitHub Actions Bot ist
+    if: ${{ github.actor != 'github-actions[bot]' }}
     runs-on: ubuntu-latest
 
     steps:
