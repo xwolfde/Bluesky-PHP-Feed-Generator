@@ -27,6 +27,7 @@ use Bluesky\Post;
 use Bluesky\Debugging;
 use Bluesky\Profil;
 use Bluesky\Lists;
+use Bluesky\StarterPack;
 
 // Loading config
 $config = new Config();
@@ -38,9 +39,9 @@ $longopts = ["help", "version", "config", "uri:", "limit:", "tag:", "lang:", "q:
 
 // Optionen parsen
 $options = getopt($shortopts, $longopts);
-$arguments = array_slice($_SERVER['argv'], count($options) + 1); // ZusÃ¤tzliche Argumente nach Optionen
+$arguments = array_slice($_SERVER['argv'], count($options) + 1); // ZusÃƒÂ¤tzliche Argumente nach Optionen
 
-// PrimÃ¤re Aktion als erstes Argument erwarten
+// PrimÃƒÂ¤re Aktion als erstes Argument erwarten
 $action = $arguments[0] ?? null;
 
 // Verarbeitungslogik
@@ -82,6 +83,8 @@ match ($action) {
     'list'          => get_list($config, $options),
     'listindex'     => get_listindex($config, $options),
     'getProfil'     => get_profil($config, $options),
+    'getActorStarterPacks' => get_ActorStarterPacks($config, $options),
+    'getStarterPacks'  => get_StarterPacks($config, $options),
     default         => show_help()
 };
 
@@ -111,6 +114,11 @@ function show_help() {
     echo "\t             Needs --did=AT URI\n";
     echo "\tgetProfil  : Returns profil information of an account\n";
     echo "\t             Needs --did=DID URI or handle\n";
+
+    echo "\tgetActorStarterPacks  : Returns a Starterpack by an handle of an actor\n";
+    echo "\t             Needs --uri=DID URI or handle\n";
+    echo "\tgetStarterPacks  : Returns a Starterpack by an uri\n";
+    echo "\t             Needs --uri=DID URI or handle\n";
     
     echo "\nParameter:\n";
     echo "\t--config: Display current config\n";
@@ -144,6 +152,7 @@ function get_profil(Config $config, array $options) {
         $profil->setConfig($config);  
         echo $profil->getProfilView() . PHP_EOL;
     
+   //     echo Debugging::get_dump_debug($profil->getRawData());
 
     } else {
         echo "No bluesky account in config.json, therfor stopping\n";
@@ -249,7 +258,7 @@ function get_searchPosts(Config $config, array $options) {
 
 }
 /*
- * Erstelle Feed und gib diesen zurÃ¼ck
+ * Erstelle Feed und gib diesen zurÃƒÂ¼ck
  */
 function createFeed(Config $config) {
     // Routing basierend auf der URL
@@ -272,7 +281,7 @@ function createFeed(Config $config) {
 
 
 /*
- * Gebe Public Timeline zurÃ¼ck
+ * Gebe Public Timeline zurÃƒÂ¼ck
  */
 function get_timeline(Config $config) {
     if ((!empty($config->get('bluesky_username'))) && (!empty($config->get('bluesky_password')))) {
@@ -341,6 +350,85 @@ function get_timeline_output(array $timeline, Config $config): string {
     return $output;
     
 }
+/*
+ * Get a StarterPack by a given uri
+ */
+function get_StarterPacks(Config $config, array $options) {
+    if ((!empty($config->get('bluesky_username'))) && (!empty($config->get('bluesky_password')))) {
+        $blueskyAPI = new API($config);
+        $token = $blueskyAPI->getAccessToken($config->get('bluesky_username'), $config->get('bluesky_password'));
+        if (!$token) {
+            throw new Exception("Login failed. Please check login and passwort in your config file.");
+        }
+      
+        if (isset($options['u'])) {
+            $uri = $options['u'];
+        } else {
+            $uri = $options['uri'];
+        }
+         if (!isset($uri)) {
+                echo "Please enter Starterpack identifier (at-uri)  with --uri=AT Identifier\n";
+                return false;
+        } 
+        
+        
+        $starterpacks = $blueskyAPI->getStarterPacks($uri);
+        if (empty($starterpacks)) {
+            echo "No StarterPack by the uri found.\n";
+            return;
+        }
+        
+        foreach ($starterpacks as $starterpack) {
+            echo $starterpack->getStarterPackView() . PHP_EOL;
+        }
+
+    
+    } else {
+       echo "No bluesky account in config.json, therfor stopping\n";
+    }
+}
+
+
+/*
+ * Get StarterPacks by a User Handle
+ */
+function get_ActorStarterPacks(Config $config, array $options) {
+    if ((!empty($config->get('bluesky_username'))) && (!empty($config->get('bluesky_password')))) {
+        $blueskyAPI = new API($config);
+        $token = $blueskyAPI->getAccessToken($config->get('bluesky_username'), $config->get('bluesky_password'));
+        if (!$token) {
+            throw new Exception("Login failed. Please check login and passwort in your config file.");
+        }
+    
+        if (!isset($options['uri'])) {
+            echo "Please enter a identifier (Handle or DID of account to fetch of)  with --uri=AT URI\n";
+            return false;
+        } 
+
+        $search = [];
+        $search['actor'] = $options['uri'];
+
+        $starterpackcontainer = $blueskyAPI->getActorStarterPacks($search);
+
+        if (empty($starterpackcontainer)) {
+            echo "No StarterPack by the uri found.\n";
+            return;
+        }
+        
+        foreach ($starterpackcontainer['starterpacks'] as $num => $starterpack) {
+   //         echo Debugging::get_dump_debug($starterpack);
+            
+            echo $starterpack->getStarterPackView() . PHP_EOL;
+        }
+        
+    // echo Debugging::get_dump_debug($profil);
+
+    } else {
+        echo "No bluesky account in config.json, therfor stopping\n";
+    }
+    
+}
+
 
 /*
  * Get a index of lists
@@ -425,7 +513,7 @@ function get_list(Config $config, array $options) {
                     $search['cursor'] = $cursor;
                     $newListdata = $blueskyAPI->getList($search);
 
-                    // Wenn keine neuen Daten oder ungültige Antwort, abbrechen
+                    // Wenn keine neuen Daten oder ungÃ¼ltige Antwort, abbrechen
                     if (!$newListdata) {
                         echo "No further data received.\n";
                         break;
@@ -434,11 +522,11 @@ function get_list(Config $config, array $options) {
                     // Cursor aktualisieren
                     $cursor = $newListdata['cursor'];
 
-                    // Neu geladene Items an $itemlist anhängen
+                    // Neu geladene Items an $itemlist anhÃ¤ngen
                     $itemlist = array_merge($itemlist, $newListdata['items']);
                 }
             }
-            // Jetzt sind alle Einträge in $itemlist
+            // Jetzt sind alle Eintraege in $itemlist
             echo "Total items in list: " . count($itemlist) . "\n";
 
             // Beispielhafter Durchlauf aller Items
