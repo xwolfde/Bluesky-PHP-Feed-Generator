@@ -54,9 +54,29 @@ returns the index of a lists of a actor with the given did
 
 ### list
 
+Normal list:
 `php status.php --did=at://did:plc:wyxbu4v7nqt6up3l3camwtnu/app.bsky.graph.list/3kfdow6lmdr27 list`
 
+List from a starterpack
+`php status.php --did=at://did:plc:wyxbu4v7nqt6up3l3camwtnu/app.bsky.graph.list/3lbmyecry7422 list` 
+
 returns a single list with its members
+
+
+### getActorStarterPacks
+
+`php status.php --uri=xwolf.de getActorStarterPacks`
+
+gets the starter pack of a defined uri/bluesky Handle
+
+
+### getStarterPacks
+
+`php status.php --uri=at://did:plc:wyxbu4v7nqt6up3l3camwtnu/app.bsky.graph.getStarterPacks/3lbmyed23tr2q getStarterPacks`
+
+returns StarterPack by uri.
+
+
 
 ## Documentation
 

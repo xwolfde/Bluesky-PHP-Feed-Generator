@@ -123,11 +123,11 @@ class API {
         return $this->makeRequest($url, "GET", $search);
     }
     
-      /**
-     * Search for a list
-     * @param array search, with (at-identifier) actor as required, (int) limit optional, (strng) cursor optional
-     * @return array|null List or null on not found
-     */
+    /**
+    * Search for a list
+    * @param array search, with (at-identifier) actor as required, (int) limit optional, (strng) cursor optional
+    * @return array|null List or null on not found
+    */
     public function getLists(array $search): ?array {
         if (!$this->token) {
             throw new \Exception("Access token is required. Call getAccessToken() first.");
@@ -231,6 +231,139 @@ class API {
         ];
     }
     
+    
+    
+    /**
+    * Get StarterPacks by Actor URI
+    */
+    public function getActorStarterPacks(array $search): ?array {
+        if (!$this->token) {
+            throw new \Exception("Access token is required. Call getAccessToken() first.");
+        }
+        if (empty($search['actor'])) {
+            throw new \InvalidArgumentException('Required field list (of type at-uri) missing.');
+        }
+        $url = "{$this->baseUrl}/app.bsky.graph.getActorStarterPacks";
+        
+        // Werte aus der Config laden
+        $configParams = $this->config->get('query_getActorStarterPacks') ?? [];
+        
+        // Fehlende Werte aus der Config ergänzen
+        foreach ($configParams as $key => $value) {
+            if (!array_key_exists($key, $search) || $search[$key] === null || $search[$key] === '') {
+                $search[$key] = $value;
+            }
+        }
+         // API-Anfrage
+        $response = $this->makeRequest($url, "GET", $search);
+
+        // Falls keine gültige Antwort vorliegt, Abbruch mit null
+        if (!$response) {
+            return null;
+        }
+
+        // Erwartete Felder prüfen
+        if (!isset($response['starterPacks'])) {
+            // Wenn Felder fehlen, kann man hier entweder null oder eine Exception werfen
+            return null;
+        }
+
+        // Umwandeln des Feldes 'starterPacks' in ein Starterpack-Objekt (Class Lists)
+        
+        $listsObjects = [];
+        foreach ($response['starterPacks'] as $num => $listData) {
+           $listsObjects[] = new StarterPack($listData, $this->config);
+        }
+        $cursor = isset($response['cursor']) ? (string) $response['cursor'] : '';
+        
+        // Rückgabe als assoziatives Array
+        return [
+            'cursor' => $cursor,
+            'starterpacks'   => $listsObjects,
+        ];
+    }
+    /**
+    * Get StarterPacks by URIS
+    */
+    public function getStarterPacks(string $uris): ?array {
+        if (!$this->token) {
+            throw new \Exception("Access token is required. Call getAccessToken() first.");
+        }
+        if (empty($uris)) {
+            throw new \InvalidArgumentException('Required field actor (of type at-identifier) missing.');
+        }
+        $data = [
+            'uris' => [$uris], // AT URI(s) as input
+        ];
+        $url = "{$this->baseUrl}/app.bsky.graph.getStarterPacks";
+
+        $response = $this->makeRequest($url, "GET", $data);
+        
+
+        // Falls keine sinnvolle Antwort vorliegt, null zurückgeben
+        if (!$response || !isset($response['starterPacks']) || !is_array($response['starterPacks'])) {
+            return null;
+        }
+
+        // Jedes Element in 'lists' in ein Objekt der Klasse Lists umwandeln
+        $listsObjects = [];
+        foreach ($response['starterPacks'] as $num => $listData) {
+      //      echo Debugging::get_var_dump($listData);
+           $listsObjects[] = new StarterPack($listData, $this->config);
+        }
+
+        return $listsObjects;
+    }
+    
+     /**
+     * Search for a list
+     * @param array search, with (at-uri) list as required, (int) limit optional, (strng) cursor optional
+     * @return array|null List or null on not found
+     */
+    public function getStarterPack(array $search): ?array {
+        if (!$this->token) {
+            throw new \Exception("Access token is required. Call getAccessToken() first.");
+        }
+        if (empty($search['starterPack'])) {
+            throw new \InvalidArgumentException('Required field list (of type at-uri) missing.');
+        }
+        $url = "{$this->baseUrl}/app.bsky.graph.getStarterPack";
+        
+        // Werte aus der Config laden
+        $configParams = $this->config->get('query_getlist') ?? [];
+        
+        // Fehlende Werte aus der Config ergänzen
+        foreach ($configParams as $key => $value) {
+            if (!array_key_exists($key, $search) || $search[$key] === null || $search[$key] === '') {
+                $search[$key] = $value;
+            }
+        }
+         // API-Anfrage
+        $response = $this->makeRequest($url, "GET", $search);
+
+        // Falls keine gültige Antwort vorliegt, Abbruch mit null
+        if (!$response) {
+            return null;
+        }
+
+        // Erwartete Felder prüfen
+        if (!isset($response['list'], $response['items'])) {
+            // Wenn Felder fehlen, kann man hier entweder null oder eine Exception werfen
+            return null;
+        }
+
+        // Umwandeln des Feldes 'list' in ein Listen-Objekt (Class Lists)
+        $listsObject = new StarterPack($response['list'], $this->config);
+        
+
+        
+        // Rückgabe als assoziatives Array
+        return [
+            'StarterPack'   => $listsObject,
+        ];
+    }
+    
+    
     /**
      * Get an account
      * @param actor
@@ -255,6 +388,8 @@ class API {
         // Wandelt das Array in ein Profil-Objekt um
         return new Profil($response, $this->config);
     }
+   
+    
     
     /*
      * Suchanfrage

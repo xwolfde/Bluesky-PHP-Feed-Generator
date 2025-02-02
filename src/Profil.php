@@ -103,6 +103,7 @@ class Profil {
         $replacements = [
             '#handle#' => $this->handle ?? 'N/A',
             '#did#' => $this->did ?? 'N/A',
+            '#displayName#' => $this->displayName ?? 'N/A',
             '#created#' => $this->createdAt ?? 'N/A',
             '#indexedat#' => $this->indexedAt ?? 'N/A',
             '#description#' => $this->description ?? 'N/A',
