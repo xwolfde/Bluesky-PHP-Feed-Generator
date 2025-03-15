@@ -35,7 +35,7 @@ $config = new Config();
 
 // Konfiguration der Kurz- und Langoptionen
 $shortopts = "hvcu:q:"; // -h, -v, -c <file>
-$longopts = ["help", "version", "config", "uri:", "limit:", "tag:", "lang:", "q:", "did:"];
+$longopts = ["help", "version", "config", "uri:", "limit:", "tag:", "lang:", "q:", "did:", "rawdata"];
 
 // Bekannte Aktionen definieren
 $validActions = [
@@ -60,44 +60,46 @@ for ($i = 0; $i < count($args); $i++) {
         continue;
     }
 
-    // Falls das Argument eine lange Option ist (--option=value oder --option value)
+    // Falls das Argument eine lange Option ist (--option oder --option=value)
     if (str_starts_with($arg, '--')) {
         $parts = explode('=', $arg, 2);
         $key = ltrim($parts[0], '-');
-        $value = $parts[1] ?? ($args[$i + 1] ?? null);
-
-        // Falls der Wert kein weiteres `--`-Argument ist, speichern
-        if (!str_starts_with($value, '--')) {
-            $options[$key] = $value;
-            if (!isset($parts[1])) { // Falls der Wert nicht mit `=` angegeben wurde, überspringe das nächste Argument
-                $i++;
+        
+        // Option ohne Wert (z. B. --config)
+        if (count($parts) === 1) {
+            // Falls das nächste Argument KEIN neues `--option`, dann als Wert speichern
+            if (isset($args[$i + 1]) && !str_starts_with($args[$i + 1], '--')) {
+                $options[$key] = $args[++$i]; // Wert aus dem nächsten Argument holen
+            } else {
+                $options[$key] = true; // Kein Wert → Option ist ein Schalter (z. B. --config)
             }
-            continue;
+        } else {
+            // Option mit `=` → Wert direkt setzen
+            $options[$key] = $parts[1];
         }
+        continue;
     }
 
-    // Falls das Argument eine kurze Option ist (-o Wert)
+    // Falls das Argument eine kurze Option ist (-o Wert oder -o)
     if (str_starts_with($arg, '-')) {
         $key = ltrim($arg, '-');
-        $value = $args[$i + 1] ?? null;
 
-        // Falls der Wert kein weiteres `-`-Argument ist, speichern
-        if (!str_starts_with($value, '-')) {
-            $options[$key] = $value;
-            $i++; // Überspringe das nächste Argument, da es zum Schlüssel gehört
-            continue;
+        // Falls es sich um eine Option mit Wert handelt (-q suchbegriff)
+        if (isset($args[$i + 1]) && !str_starts_with($args[$i + 1], '-')) {
+            $options[$key] = $args[++$i];
+        } else {
+            $options[$key] = true; // Falls keine Werte vorhanden sind (z. B. -c)
         }
+        continue;
     }
 
     // Falls es kein Argument ist, bleibt es als zusätzliches Argument erhalten
     $remainingArgs[] = $arg;
+
 }
 
-// Falls keine Aktion gefunden wurde, Hilfe anzeigen
-if (!$action) {
-    show_help();
-    exit(0);
-}
+var_dump($options);
+
 
 // Standardoptionen ausführen
 if (isset($options['h']) || isset($options['help'])) {
@@ -124,6 +126,11 @@ if (isset($options['v']) || isset($options['version'])) {
 
 if (isset($options['c']) || isset($options['config'])) {
     show_config($config);
+    exit(0);
+}
+// Falls keine Aktion gefunden wurde, Hilfe anzeigen
+if (!$action) {
+    show_help();
     exit(0);
 }
 
@@ -182,7 +189,7 @@ function show_help() {
     echo "\t--help: This help\n";
     echo "\t--uri: AT-URI\n";
     echo "\t--v: Version\n";
-    
+    echo "\t--rawdata:  Displays Output as raw data (not all actions yet).\n";
 }
 
 
@@ -243,12 +250,18 @@ function get_post(Config $config, array $options) {
             echo "Login failed. Please check login and passwort in your config file.";
             return false;
         }
-
-
+        
         $post = $blueskyAPI->getPosts($uri);
+        if ($post === null) {
+            return false;
+        }
         $post->setConfig($config);
-        echo $post->getPostView();
-
+        
+        if (isset($options['rawdata'])) {
+            echo Debugging::get_dump_debug($post->toArray());
+        } else {
+            echo $post->getPostView();
+        }
          
         return true;
 
@@ -298,8 +311,11 @@ function get_searchPosts(Config $config, array $options) {
             echo "Found: ".$searchdata['hitsTotal']. " hits\n";
             foreach ($searchdata['posts'] as $post) {          
                 $post->setConfig($config);
-                echo $post->getPostView()."\n";
-                
+                if (isset($options['rawdata'])) {
+                    echo Debugging::get_dump_debug($post->toArray());
+                } else {
+                    echo $post->getPostView()."\n";
+                }
            }
              
         } else {
