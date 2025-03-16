@@ -105,7 +105,26 @@ class Post {
         return $taglist;
     }
     
-    
+    public function toArray(): array {
+        return [
+            'text' => $this->text,
+            'uri' => $this->uri,
+            'cid' => $this->cid,
+            'createdAt' => $this->createdAt,
+            'indexedAt' => $this->indexedAt,
+            'autor' => $this->autor,
+            'embeds' => $this->embeds,
+            'facets' => $this->facets,
+            'langs' => $this->langs,
+            'likeCount' => $this->likeCount,
+            'repostCount' => $this->repostCount,
+            'replyCount' => $this->replyCount,
+            'quoteCount' => $this->quoteCount,
+            'viewer' => $this->viewer,
+            'labels' => $this->labels,
+            'rawdata' => $this->rawdata
+        ];
+    }
     
     public function getRawData(): array {
         return $this->rawdata;
@@ -121,6 +140,7 @@ class Post {
             $template .= "Stats      : #likes# Likes, #reposts# Reposts, #replys# Replys".PHP_EOL;
             $template .= "Bluesky URL: #blueskyurl#".PHP_EOL;
             $template .= "XRPC URL   : #xrpcurl#".PHP_EOL;
+            $template .= "URI        : #blueskyuri#".PHP_EOL;
         }
         
         $limit = 80;
@@ -144,6 +164,7 @@ class Post {
             '#quotes#' => $this->quoteCount ?? '0',
             '#likes#' => $this->likeCount ?? '0',
             '#blueskyurl#'  => $this->getBlueskyURL() ?? '',
+            '#blueskyuri#'  => $this->uri ?? '',
             '#xrpcurl#' => $this->getBlueSkyXRPCURL() ?? ''
         ];
 

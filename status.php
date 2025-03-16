@@ -35,16 +35,73 @@ $config = new Config();
 
 // Konfiguration der Kurz- und Langoptionen
 $shortopts = "hvcu:q:"; // -h, -v, -c <file>
-$longopts = ["help", "version", "config", "uri:", "limit:", "tag:", "lang:", "q:","did:"]; 
+$longopts = ["help", "version", "config", "uri:", "limit:", "tag:", "lang:", "q:", "did:", "rawdata"];
 
-// Optionen parsen
-$options = getopt($shortopts, $longopts);
-$arguments = array_slice($_SERVER['argv'], count($options) + 1); // ZusÃƒÂ¤tzliche Argumente nach Optionen
+// Bekannte Aktionen definieren
+$validActions = [
+    'timeline', 'getFeed', 'autorfeed', 'getPost', 'searchPosts', 'search', 'list',
+    'listindex', 'getProfil', 'getActorStarterPacks', 'getStarterPacks'
+];
 
-// PrimÃƒÂ¤re Aktion als erstes Argument erwarten
-$action = $arguments[0] ?? null;
+// Alle Argumente abrufen (außer dem Skriptnamen selbst)
+$args = array_slice($_SERVER['argv'], 1);
 
-// Verarbeitungslogik
+$action = null;
+$options = [];
+$remainingArgs = [];
+
+// Manuelles Parsen aller Argumente
+for ($i = 0; $i < count($args); $i++) {
+    $arg = $args[$i];
+
+    // Falls das Argument eine bekannte Aktion ist und noch keine Aktion gesetzt wurde
+    if (in_array($arg, $validActions, true) && !$action) {
+        $action = $arg;
+        continue;
+    }
+
+    // Falls das Argument eine lange Option ist (--option oder --option=value)
+    if (str_starts_with($arg, '--')) {
+        $parts = explode('=', $arg, 2);
+        $key = ltrim($parts[0], '-');
+        
+        // Option ohne Wert (z. B. --config)
+        if (count($parts) === 1) {
+            // Falls das nächste Argument KEIN neues `--option`, dann als Wert speichern
+            if (isset($args[$i + 1]) && !str_starts_with($args[$i + 1], '--')) {
+                $options[$key] = $args[++$i]; // Wert aus dem nächsten Argument holen
+            } else {
+                $options[$key] = true; // Kein Wert → Option ist ein Schalter (z. B. --config)
+            }
+        } else {
+            // Option mit `=` → Wert direkt setzen
+            $options[$key] = $parts[1];
+        }
+        continue;
+    }
+
+    // Falls das Argument eine kurze Option ist (-o Wert oder -o)
+    if (str_starts_with($arg, '-')) {
+        $key = ltrim($arg, '-');
+
+        // Falls es sich um eine Option mit Wert handelt (-q suchbegriff)
+        if (isset($args[$i + 1]) && !str_starts_with($args[$i + 1], '-')) {
+            $options[$key] = $args[++$i];
+        } else {
+            $options[$key] = true; // Falls keine Werte vorhanden sind (z. B. -c)
+        }
+        continue;
+    }
+
+    // Falls es kein Argument ist, bleibt es als zusätzliches Argument erhalten
+    $remainingArgs[] = $arg;
+
+}
+
+var_dump($options);
+
+
+// Standardoptionen ausführen
 if (isset($options['h']) || isset($options['help'])) {
     show_help();
     exit(0);
@@ -66,17 +123,22 @@ if (isset($options['v']) || isset($options['version'])) {
     echo "Version: " . $version . "\n";
     exit(0);
 }
+
 if (isset($options['c']) || isset($options['config'])) {
     show_config($config);
     exit(0);
 }
+// Falls keine Aktion gefunden wurde, Hilfe anzeigen
+if (!$action) {
+    show_help();
+    exit(0);
+}
 
-
-
+// Aktion ausführen
 match ($action) {
-    'timeline'      => get_timeline($config),
-    'autorfeed'     => get_authorfeed($config),
- //   'createFeed'    => createFeed($config),
+    'timeline'      => get_timeline($config, $options),
+    'autorfeed'     => get_feed($config, $options),
+    'getFeed'       => get_feed($config, $options),
     'getPost'       => get_post($config, $options),
     'searchPosts'   => get_searchPosts($config, $options),
     'search'        => get_searchPosts($config, $options),
@@ -87,6 +149,7 @@ match ($action) {
     'getStarterPacks'  => get_StarterPacks($config, $options),
     default         => show_help()
 };
+
 
 
 exit;
@@ -102,7 +165,8 @@ function show_config(Config $config) {
 function show_help() {
     echo "Hilfe: Commands are:\n";
     echo "\ttimeline   : Display public timeline\n";
-    echo "\tautorfeed  : Display feed of the given author\n";
+    echo "\tgetFeed    : Display feed of the given author\n";
+    echo "\t             Needs either --did=DID or handle or timeline-did in config.json\n";
   //  echo "\tcreatefeed: Erstelle XRPC feed\n";
     echo "\tgetPost    : Loads a defined post.\n";
     echo "\t             Needs --uri=AT-URI\n";
@@ -125,7 +189,7 @@ function show_help() {
     echo "\t--help: This help\n";
     echo "\t--uri: AT-URI\n";
     echo "\t--v: Version\n";
-    
+    echo "\t--rawdata:  Displays Output as raw data (not all actions yet).\n";
 }
 
 
@@ -144,6 +208,8 @@ function get_profil(Config $config, array $options) {
             echo "Please enter a identifier (Handle or DID of account to fetch of)  with --did=AT URI\n";
             return false;
         } 
+        
+        echo "Looking up Profil for DID or Handle: ".$options['did'].":\n\n";
 
         $search = [];
         $search['actor'] = $options['did'];
@@ -184,12 +250,18 @@ function get_post(Config $config, array $options) {
             echo "Login failed. Please check login and passwort in your config file.";
             return false;
         }
-
-
+        
         $post = $blueskyAPI->getPosts($uri);
+        if ($post === null) {
+            return false;
+        }
         $post->setConfig($config);
-        echo $post->getPostView();
-
+        
+        if (isset($options['rawdata'])) {
+            echo Debugging::get_dump_debug($post->toArray());
+        } else {
+            echo $post->getPostView();
+        }
          
         return true;
 
@@ -239,8 +311,11 @@ function get_searchPosts(Config $config, array $options) {
             echo "Found: ".$searchdata['hitsTotal']. " hits\n";
             foreach ($searchdata['posts'] as $post) {          
                 $post->setConfig($config);
-                echo $post->getPostView()."\n";
-                
+                if (isset($options['rawdata'])) {
+                    echo Debugging::get_dump_debug($post->toArray());
+                } else {
+                    echo $post->getPostView()."\n";
+                }
            }
              
         } else {
@@ -283,7 +358,7 @@ function createFeed(Config $config) {
 /*
  * Gebe Public Timeline zurÃƒÂ¼ck
  */
-function get_timeline(Config $config) {
+function get_timeline(Config $config, array $options) {
     if ((!empty($config->get('bluesky_username'))) && (!empty($config->get('bluesky_password')))) {
         $blueskyAPI = new API($config);
         $token = $blueskyAPI->getAccessToken($config->get('bluesky_username'), $config->get('bluesky_password'));
@@ -303,18 +378,24 @@ function get_timeline(Config $config) {
 /*
  * Hole den Feed eines Autors
  */
-function get_authorfeed(Config $config) {
+function get_feed(Config $config, array $options) {
      if ((!empty($config->get('bluesky_username'))) && (!empty($config->get('bluesky_password')))) {
         $blueskyAPI = new API($config);
         $token = $blueskyAPI->getAccessToken($config->get('bluesky_username'), $config->get('bluesky_password'));
         if (!$token) {
             throw new Exception("Login failed. Please check login and passwort in your config file.");
         }
-
-        if (!empty($config->get("timeline-did"))) {
+       
+        if (!empty($options['did'])) {
+            echo "Timeline of did ".$options['did'].":\n";
+            $didtimeline = $blueskyAPI->getAuthorFeed($options['did']);
+            echo get_timeline_output($didtimeline, $config);
+        } elseif (!empty($config->get("timeline-did"))) {
             echo "Timeline of did ".$config->get("timeline-did").":\n";
             $didtimeline = $blueskyAPI->getAuthorFeed($config->get("timeline-did"));
             echo get_timeline_output($didtimeline, $config);
+        } else {
+            echo "No DID for timeline in params (--did=DID) or in config.json\nPlease enter a value like: timeline-did=DID\n";
         }
     } else {
         echo "No bluesky account in config.json, therfor stopping\n";
