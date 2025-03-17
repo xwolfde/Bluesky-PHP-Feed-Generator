@@ -1,0 +1,13 @@
+{
+    "block-user": ["mamittera.bsky.social"],
+    "block-hashtags": ["sell"],
+    "block-patterns": [
+        "Alt-Text",
+        "ALT",
+        "Alt Text"
+
+    ],
+    "rules": {
+        "hashtagcloud": true
+    }
+}

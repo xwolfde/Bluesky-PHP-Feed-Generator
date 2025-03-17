@@ -35,7 +35,7 @@ $config = new Config();
 
 // Konfiguration der Kurz- und Langoptionen
 $shortopts = "hvcu:q:"; // -h, -v, -c <file>
-$longopts = ["help", "version", "config", "uri:", "limit:", "tag:", "lang:", "q:", "did:", "rawdata"];
+$longopts = ["help", "version", "config", "uri:", "limit:", "tag:", "lang:", "q:", "did:", "rawdata", "filter:"];
 
 // Bekannte Aktionen definieren
 $validActions = [
@@ -139,7 +139,7 @@ match ($action) {
     'getFeed'       => get_feed($config, $options),
     'getPost'       => get_post($config, $options),
     'searchPosts'   => get_searchPosts($config, $options),
-    'getByLabel'    => get_searchPosts($config, $options),
+    'getByLabel'    => get_ByLabel($config, $options),
     'search'        => get_searchPosts($config, $options),
     'list'          => get_list($config, $options),
     'listindex'     => get_listindex($config, $options),
@@ -332,7 +332,7 @@ function get_searchPosts(Config $config, array $options) {
 
 }
 
-function getByLabel(Config $config, array $options) {
+function get_ByLabel(Config $config, array $options) {
     if (!isset($options['q'])) {
         echo "Please enter a label search string --q=Label\n";
         exit;
@@ -357,8 +357,12 @@ function getByLabel(Config $config, array $options) {
         // API-Abfrage für Posts mit einem bestimmten Label
         $searchdata = $blueskyAPI->searchPosts($search);
         
+        if (!empty($options['filter'])) {
+            $searchdata = filter_posts($searchdata, $options['filter'], $config);
+        }
+        
         if ($searchdata['hitsTotal'] > 0) {
-            echo "Found: ".$searchdata['hitsTotal']." hits\n";
+            
             foreach ($searchdata['posts'] as $post) {          
                 $post->setConfig($config);
                 if (isset($options['rawdata'])) {
@@ -366,6 +370,10 @@ function getByLabel(Config $config, array $options) {
                 } else {
                     echo $post->getPostView()."\n";
                 }
+            }
+            echo "Tatal hits for search: ".$searchdata['hitsTotal']." hits\n";
+            if (isset($searchdata['blocked'])) {
+                echo "Blocked: ".$searchdata['blocked']."\n";
             }
         } else {
             echo "Nothing found\n";
@@ -379,7 +387,123 @@ function getByLabel(Config $config, array $options) {
     }
 }
 
+/*
+ * Nehme eine Liste an Post und filtere ssie gegen eine Liste an 
+ * Filtereigenschaften aus einer Datei
+ */
+function filter_posts(array $data, string $filePath, Config $config) {
+      if (!file_exists($filePath)) {
+            echo "No file for Filter args found or invalid filename\n";
+            return $data;
+        }
 
+        $jsonData = file_get_contents($filePath);
+        $filterargs = json_decode($jsonData, true);
+        $result = $data;
+        $result['posts'] = [];
+        $blockeduser = 0;
+        $blocked = 0;
+        echo Debugging::get_dump_debug($filterargs);
+        
+        
+        // First filter for accounts
+        if (!empty($filterargs['block-user'])) {
+            $busers = $filterargs['block-user'];
+            $result['posts'] = [];
+            foreach ($data['posts'] as $post) {
+               //  $post->setConfig($config);
+                $profil = $post->autor;
+                
+                
+                if (in_array($profil->handle, $busers)) {
+                    echo "Post from user ".$profil->handle." blocked.\n";
+                    $blockeduser++;
+                    $blocked++;
+                } else {
+                    $result['posts'][] = $post;
+                }
+            }
+            if ($blockeduser>0) {
+                $data['posts'] = $result['posts'];
+                $data['blocked'] = $blocked;
+                $data['blockeduserposts'] = $blockeduser;
+            }
+        }
+        
+        // then filter for special patterns
+        if (!empty($filterargs['block-patterns'])) {
+            $blockedpatterns = 0;
+            $bpatterns = $filterargs['block-patterns'];
+            $result['posts'] = [];
+            foreach ($data['posts'] as $post) {
+               //  $post->setConfig($config);
+                $text = $post->text;
+                
+                if (checkPatterns($text, $bpatterns)) {
+                    echo "Post blocked cause of pattern.\n";
+                    $blockedpatterns++;
+                    $blocked++;
+                } else {
+                    $result['posts'][] = $post;
+                }
+            }
+            if ($blockedpatterns>0) {
+                $data['posts'] = $result['posts'];
+                $data['blocked'] = $blocked;
+                $data['blockedpatterns'] = $blockedpatterns;
+            }
+        }
+        // filter posts that only consists out of hashtags + url
+        if ((!empty($filterargs['rules'])) && ($filterargs['rules']['hashtagcloud'] == true)) {
+            $blockedhashcloud = 0;
+            $bpatterns = $filterargs['block-patterns'];
+            $result['posts'] = [];
+            foreach ($data['posts'] as $post) {
+               
+                $text = $post->text;
+                
+                if (isOnlyHashtagsAndURL($text)) {
+                    echo "Post blocked cause of tagcloud.\n";
+                    $blockedhashcloud++;
+                    $blocked++;
+                } else {
+                    $result['posts'][] = $post;
+                }
+            }
+            if ($blockedhashcloud>0) {
+                $data['posts'] = $result['posts'];
+                $data['blockedhashcloud'] = $blockedhashcloud;
+                $data['blocked'] = $blocked;
+            }
+        }
+        return $data;
+}
+
+/*
+ * Prüfung nach POsts, die nur aus Hashtags und einer URL bestehen
+ */
+function isOnlyHashtagsAndURL(string $text): bool {
+    return preg_match('/^\s*(?:#\w+\s*)*(https?:\/\/\S+)?(?:\s*#\w+)*\s*$/', trim($text));    
+}
+/**
+ * Funktion prüft, ob ein Begriff oder Regex aus $patterns im $text vorkommt.
+ */
+function checkPatterns(string $text, array $patterns): bool {
+    foreach ($patterns as $pattern) {
+        // Prüfen, ob es sich um einen regulären Ausdruck handelt (Start/Ende mit `/` oder `#`)
+        if (@preg_match($pattern, '') !== false) { 
+            if (preg_match($pattern, $text)) {
+                return true;
+            }
+        } else {
+            // Falls es kein regulärer Ausdruck ist, prüfe normalen String
+            if (str_contains($text, $pattern)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
 
 /*
  * Erstelle Feed und gib diesen zurÃƒÂ¼ck
