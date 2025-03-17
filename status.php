@@ -40,7 +40,7 @@ $longopts = ["help", "version", "config", "uri:", "limit:", "tag:", "lang:", "q:
 // Bekannte Aktionen definieren
 $validActions = [
     'timeline', 'getFeed', 'autorfeed', 'getPost', 'searchPosts', 'search', 'list',
-    'listindex', 'getProfil', 'getActorStarterPacks', 'getStarterPacks'
+    'listindex', 'getProfil', 'getActorStarterPacks', 'getStarterPacks', 'getByLabel'
 ];
 
 // Alle Argumente abrufen (außer dem Skriptnamen selbst)
@@ -98,8 +98,6 @@ for ($i = 0; $i < count($args); $i++) {
 
 }
 
-var_dump($options);
-
 
 // Standardoptionen ausführen
 if (isset($options['h']) || isset($options['help'])) {
@@ -141,6 +139,7 @@ match ($action) {
     'getFeed'       => get_feed($config, $options),
     'getPost'       => get_post($config, $options),
     'searchPosts'   => get_searchPosts($config, $options),
+    'getByLabel'    => get_searchPosts($config, $options),
     'search'        => get_searchPosts($config, $options),
     'list'          => get_list($config, $options),
     'listindex'     => get_listindex($config, $options),
@@ -178,7 +177,7 @@ function show_help() {
     echo "\t             Needs --did=AT URI\n";
     echo "\tgetProfil  : Returns profil information of an account\n";
     echo "\t             Needs --did=DID URI or handle\n";
-
+    echo "\tgetByLabel  : Returns posts by a given label\n";
     echo "\tgetActorStarterPacks  : Returns a Starterpack by an handle of an actor\n";
     echo "\t             Needs --uri=DID URI or handle\n";
     echo "\tgetStarterPacks  : Returns a Starterpack by an uri\n";
@@ -278,7 +277,7 @@ function get_post(Config $config, array $options) {
  */
 function get_searchPosts(Config $config, array $options) {
     if (!isset($options['q'])) {
-        echo "Please enter a URI for a post to look at with --uri=URI\n";
+        echo "Please enter a search string --q=Search\n";
         exit;
     } 
     
@@ -332,6 +331,56 @@ function get_searchPosts(Config $config, array $options) {
     }
 
 }
+
+function getByLabel(Config $config, array $options) {
+    if (!isset($options['q'])) {
+        echo "Please enter a label search string --q=Label\n";
+        exit;
+    } 
+    
+    $search = [];
+    $search['q'] = '#'.$options['q'];
+    $search['label'] = $options['q']; // Statt 'q' wird hier gezielt nach Labels gesucht
+    if (isset($options['limit'])) {
+        $search['limit'] = $options['limit'];
+    }
+    
+    // Bluesky-API Login
+    if ((!empty($config->get('bluesky_username'))) && (!empty($config->get('bluesky_password')))) {
+        $blueskyAPI = new API($config);
+        $token = $blueskyAPI->getAccessToken($config->get('bluesky_username'), $config->get('bluesky_password'));
+        if (!$token) {
+            echo "Login failed. Please check login and password in your config file.";
+            return false;
+        }  
+
+        // API-Abfrage für Posts mit einem bestimmten Label
+        $searchdata = $blueskyAPI->searchPosts($search);
+        
+        if ($searchdata['hitsTotal'] > 0) {
+            echo "Found: ".$searchdata['hitsTotal']." hits\n";
+            foreach ($searchdata['posts'] as $post) {          
+                $post->setConfig($config);
+                if (isset($options['rawdata'])) {
+                    echo Debugging::get_dump_debug($post->toArray());
+                } else {
+                    echo $post->getPostView()."\n";
+                }
+            }
+        } else {
+            echo "Nothing found\n";
+            echo Debugging::get_dump_debug($searchdata, false, true);
+        }
+
+        return true;
+    } else {
+        echo "No Bluesky account in config.json, therefore stopping\n";
+        return false;
+    }
+}
+
+
+
 /*
  * Erstelle Feed und gib diesen zurÃƒÂ¼ck
  */

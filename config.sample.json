@@ -12,8 +12,7 @@
     "query_searchPosts": {
         "lang": "de",
         "limit": 20,
-        "sort": "latest",
-        "tag": ""
+        "sort": "latest"
     },
      "query_timeline": {
         "limit": 10
